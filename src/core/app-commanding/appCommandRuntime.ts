@@ -6,6 +6,8 @@ import {
   type AppCommandPort,
 } from './appCommandBus'
 import { reflectAppCommandToTerminalLine } from './commandReflection'
+import { commandRegistry } from './commandRegistry'
+import { undoManager } from './undoManager'
 import { useSceneStore, useViewportStore, useBridgeStore, useAvatarStore, useUiStore } from '../../app/state'
 import { sceneService, bridgeService } from '../../services'
 import { createEngineRuntime, type EngineCapability } from '../engine'
@@ -72,7 +74,7 @@ function getPoseStoreCommandPort(): AppCommandPort {
     clearSceneDeferredRemote: () => bridgeStore.clearSceneDeferredRemote(),
     clearSceneEventLog: () => uiStore.clearSceneEventLog(),
     clearSceneRemoteOverride: () => bridgeStore.clearSceneRemoteOverride(),
-    redoSceneEdit: (envelope) => sceneService.redo(toSceneEngineMeta(envelope)),
+    redoSceneEdit: () => undoManager.redo(),
     requestEngineSimPreview: () => {
       uiStore.appendSceneEvent({
         kind: 'engine_sim_preview_unavailable',
@@ -103,8 +105,20 @@ function getPoseStoreCommandPort(): AppCommandPort {
     },
     resetPose: () => avatarStore.resetPose(),
     resetCameraOverlayFlip: () => viewportStore.resetCameraOverlayFlip(),
-    rotateTopView: (direction) => viewportStore.rotateTopView(direction),
-    runSceneCommand: (command, envelope) => sceneService.runCommand(command, toSceneEngineMeta(envelope)),
+    rotateTopView: (direction) => {
+      viewportStore.rotateTopView(direction)
+      return {
+        redo: () => viewportStore.rotateTopView(direction),
+        undo: () => viewportStore.rotateTopView(direction === 1 ? -1 : 1),
+      }
+    },
+    runSceneCommand: (command, envelope) => {
+      sceneService.runCommand(command, toSceneEngineMeta(envelope))
+      return {
+        redo: () => sceneService.redo(toSceneEngineMeta(envelope)),
+        undo: () => sceneService.undo(toSceneEngineMeta(envelope)),
+      }
+    },
     setBridgeEnabled: (enabled) => bridgeStore.setBridgeEnabled(enabled),
     setCameraOverlayFlip: (axis, enabled) => viewportStore.setCameraOverlayFlip(axis, enabled),
     setEngineCapabilityEnabled: (capabilityId, enabled) => {
@@ -124,18 +138,46 @@ function getPoseStoreCommandPort(): AppCommandPort {
         summary:
           outcome === 'not_found'
             ? `capability ${capabilityId} not found`
-            : `capability ${capabilityId} ${enabled ? 'enabled' : 'disabled'} (${outcome})`,
+            : `capability ${capabilityId} ${enabled ? 'disabled' : 'enabled'} (${outcome})`,
       })
     },
-    setCameraView: (view) => viewportStore.setCameraView(view),
-    setProjectionMode: (mode) => viewportStore.setProjectionMode(mode),
+    setCameraView: (view) => {
+      const prevView = viewportStore.cameraView
+      viewportStore.setCameraView(view)
+      return {
+        redo: () => viewportStore.setCameraView(view),
+        undo: () => viewportStore.setCameraView(prevView),
+      }
+    },
+    setProjectionMode: (mode) => {
+      const prevMode = viewportStore.projectionMode
+      viewportStore.setProjectionMode(mode)
+      return {
+        redo: () => viewportStore.setProjectionMode(mode),
+        undo: () => viewportStore.setProjectionMode(prevMode),
+      }
+    },
     setSceneId: (sceneId) => sceneStore.setSceneId(sceneId),
-    setActiveToolMode: (mode) => uiStore.setActiveToolMode(mode),
+    setActiveToolMode: (mode) => {
+      const prevMode = uiStore.activeToolMode
+      uiStore.setActiveToolMode(mode)
+      return {
+        redo: () => uiStore.setActiveToolMode(mode),
+        undo: () => uiStore.setActiveToolMode(prevMode),
+      }
+    },
     setSceneEventAutoScroll: (enabled) => uiStore.setSceneEventAutoScroll(enabled),
     setSceneEventLogPaused: (enabled) => uiStore.setSceneEventLogPaused(enabled),
     setSelectedMonitoringCameraId: (cameraId) => viewportStore.setSelectedMonitoringCameraId(cameraId),
     setSelectedPlacementId: (placementId) => sceneStore.setSelectedPlacementId(placementId),
-    setShowDimensions: (show) => viewportStore.setShowDimensions(show),
+    setShowDimensions: (show) => {
+      const prevShow = viewportStore.showDimensions
+      viewportStore.setShowDimensions(show)
+      return {
+        redo: () => viewportStore.setShowDimensions(show),
+        undo: () => viewportStore.setShowDimensions(prevShow),
+      }
+    },
     toggleSceneEdit: () => sceneStore.toggleSceneEdit(),
     toggleSceneEventTerminal: () => uiStore.toggleSceneEventTerminal(),
     toggleSceneRemoteHold: () => bridgeStore.toggleSceneRemoteHold(),
@@ -154,7 +196,7 @@ function getPoseStoreCommandPort(): AppCommandPort {
     toggleWorkspaceWidgetPinned: (widget) => {
       dispatchWorkspaceShellCommand({ kind: 'toggle_widget_pinned', widget })
     },
-    undoSceneEdit: (envelope) => sceneService.undo(toSceneEngineMeta(envelope)),
+    undoSceneEdit: () => undoManager.undo(),
     restoreWorkspaceLayoutDefaults: () => {
       dispatchWorkspaceShellCommand({ kind: 'restore_layout_defaults' })
     },
@@ -163,7 +205,14 @@ function getPoseStoreCommandPort(): AppCommandPort {
 
 const poseStoreEngineRuntime = createEngineRuntime<AppCommand, PoseStoreEngineCapabilityEvent, PoseStoreState>({
   dispatchCommand: (envelope) => {
-    dispatchAppCommandEnvelope(getPoseStoreCommandPort(), envelope)
+    const undoResult = dispatchAppCommandEnvelope(getPoseStoreCommandPort(), envelope)
+    const meta = commandRegistry.get(envelope.command.kind)
+    if (meta?.flags?.undoable && undoResult) {
+      undoManager.push({
+        envelope,
+        undoResult,
+      })
+    }
   },
   emitEvent: (event) => {
     const sceneStore = useSceneStore.getState()

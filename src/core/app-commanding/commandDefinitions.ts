@@ -200,6 +200,7 @@ commandRegistry.register({
         if (mode === ctx.activeToolMode) return { commands: [], message: `tool already ${mode}` }
         return { commands: [{ kind: 'set_active_tool', mode }], message: `tool -> ${mode}` }
     },
+    flags: { undoable: true },
 })
 
 commandRegistry.register({
@@ -348,6 +349,7 @@ commandRegistry.register({
         if (cmd.command.kind === 'rotate_selected_by') return `rotate ${cmd.command.deltaDeg}`
         return `move ${cmd.command.deltaM[0]} ${cmd.command.deltaM[1]}`
     },
+    flags: { undoable: true },
     // fromTerminalArgs mapped virtually in terminal catalog since scene commands have multiple sub-aliases
 })
 
@@ -372,6 +374,7 @@ commandRegistry.register({
         if (!view) return commandError('invalid view (use: iso | front | back | left | right | top | sensor)')
         return { commands: [{ kind: 'set_camera_view', view }], message: `camera view ${view}` }
     },
+    flags: { undoable: true },
 })
 
 commandRegistry.register({
@@ -388,6 +391,7 @@ commandRegistry.register({
         if (!mode) return commandError('invalid projection (use: orthographic|perspective)')
         return { commands: [{ kind: 'set_projection_mode', mode }], message: `projection ${mode}` }
     },
+    flags: { undoable: true },
 })
 
 commandRegistry.register({
@@ -404,6 +408,7 @@ commandRegistry.register({
         const nextShow = explicitFlag ?? !ctx.showDimensions
         return { commands: [{ kind: 'set_show_dimensions', show: nextShow }], message: `dimensions ${nextShow ? 'on' : 'off'}` }
     },
+    flags: { undoable: true },
 })
 
 commandRegistry.register({
@@ -412,6 +417,7 @@ commandRegistry.register({
     label: 'Rotate Top View',
     description: 'Rotar la vista top (CW / CCW).',
     toTerminalLine: (cmd) => cmd.direction < 0 ? 'top_ccw' : 'top_cw',
+    flags: { undoable: true },
 })
 
 commandRegistry.register({
