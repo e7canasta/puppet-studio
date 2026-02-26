@@ -5,7 +5,7 @@ import { useSceneStore, useUiStore, useBridgeStore, useViewportStore, useTermina
 import { listPoseStoreEngineCapabilities } from '../../../core/app-commanding'
 import { runtimeConfig } from '../../../core/config'
 import { isPrimaryShortcut } from '../../../shared/shortcuts'
-import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
+import { createAppCommandDispatcher } from '../../../shared/ui'
 import {
   buildSceneEventFilterOptions,
   filterTerminalCommandPaletteItems,
@@ -147,7 +147,7 @@ export function useSceneEventTerminalState() {
   const commandInputRef = useRef<HTMLInputElement | null>(null)
   const commandPaletteInputRef = useRef<HTMLInputElement | null>(null)
 
-  const dispatchFromTerminal = createPoseStoreCommandDispatcher('ui.event_terminal')
+  const dispatchFromTerminal = createAppCommandDispatcher('ui.event_terminal')
   const commandSuggestions = useMemo(() => suggestTerminalCommands(commandInput), [commandInput])
   const commandPaletteItems = useMemo(
     () => filterTerminalCommandPaletteItems(commandPaletteQuery),

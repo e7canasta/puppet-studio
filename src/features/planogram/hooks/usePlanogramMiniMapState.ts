@@ -7,7 +7,7 @@ import {
   selectPlacementLegendItems,
   selectSelectedPlacementView,
 } from '../../../core/scene-domain'
-import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
+import { createAppCommandDispatcher } from '../../../shared/ui'
 import {
   buildPlanogramPlacementHitPolygons,
   computePlanogramMiniMapScale,
@@ -114,7 +114,7 @@ export function usePlanogramMiniMapState() {
     [scenePlacements, sceneRoom, topQuarterTurns],
   )
 
-  const dispatchFromPlanogram = createPoseStoreCommandDispatcher('ui.planogram')
+  const dispatchFromPlanogram = createAppCommandDispatcher('ui.planogram')
 
   return {
     avatarPlanPositionM,

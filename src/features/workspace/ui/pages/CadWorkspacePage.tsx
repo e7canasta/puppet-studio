@@ -5,7 +5,7 @@ import { useSceneStore, useViewportStore, useBridgeStore, useUiStore } from '../
 import { listPoseStoreEngineCapabilities } from '../../../../core/app-commanding'
 import type { WorkspaceWidgetId } from '../../../../core/workspace-shell'
 import {
-  createPoseStoreCommandDispatcher,
+  createAppCommandDispatcher,
   IconCamera,
   IconOutliner,
   IconPlanogram,
@@ -81,7 +81,7 @@ export function CadWorkspacePage() {
     () => listPoseStoreEngineCapabilities().filter((capability) => capability.enabled).length,
     [sceneEventLogCount],
   )
-  const dispatchFromWorkspace = createPoseStoreCommandDispatcher('ui.workspace_shell')
+  const dispatchFromWorkspace = createAppCommandDispatcher('ui.workspace_shell')
   const {
     leftPanelSizePx,
     leftPanelOpen,

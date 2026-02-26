@@ -1,3 +1,3 @@
 export * from './editableTarget'
-export * from './poseStoreCommandDispatch'
+export * from './appCommandDispatch'
 export * from './studioIcons'

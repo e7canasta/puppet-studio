@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { useAvatarStore, useBridgeStore, useSceneStore, useUiStore } from '../../../app/state'
-import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
+import { createAppCommandDispatcher } from '../../../shared/ui'
 
 export function usePoseControlPanelState() {
   // Group 1: Avatar state (pose + action)
@@ -113,7 +113,7 @@ export function usePoseControlPanelState() {
     setSceneDraft(sceneId)
   }, [sceneId])
 
-  const dispatchFromControlPanel = createPoseStoreCommandDispatcher('ui.control_panel')
+  const dispatchFromControlPanel = createAppCommandDispatcher('ui.control_panel')
 
   return {
     bridgeEnabled,

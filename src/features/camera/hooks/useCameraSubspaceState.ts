@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { useViewportStore, useSceneStore } from '../../../app/state'
 import { selectMonitoringCamera } from '../../../core/scene-domain'
-import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
+import { createAppCommandDispatcher } from '../../../shared/ui'
 import { buildCameraOverlayViewModel, selectCameraOverlay } from '../model'
 
 export function useCameraSubspaceState() {
@@ -29,7 +29,7 @@ export function useCameraSubspaceState() {
     [cameraOverlayFlipX, cameraOverlayFlipY, selectedCamera, selectedOverlay],
   )
 
-  const dispatchFromCameraPanel = createPoseStoreCommandDispatcher('ui.camera_panel')
+  const dispatchFromCameraPanel = createAppCommandDispatcher('ui.camera_panel')
 
   return {
     cameraOverlayFlipX,

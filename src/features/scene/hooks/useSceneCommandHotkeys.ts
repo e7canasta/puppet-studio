@@ -3,12 +3,12 @@ import { useEffect } from 'react'
 import { useSceneStore, useViewportStore } from '../../../app/state'
 import { SCENE_COMMAND_MOVE_STEP_M, SCENE_COMMAND_ROTATE_STEP_DEG, SCENE_COMMAND_SNAP_STEP_M } from '../../../core/config'
 import { isPrimaryShortcut } from '../../../shared/shortcuts'
-import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
+import { createAppCommandDispatcher } from '../../../shared/ui'
 import { isEditableTarget } from '../model'
 
 export function useSceneCommandHotkeys() {
   useEffect(() => {
-    const dispatchFromHotkeys = createPoseStoreCommandDispatcher('ui.hotkeys')
+    const dispatchFromHotkeys = createAppCommandDispatcher('ui.hotkeys')
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return

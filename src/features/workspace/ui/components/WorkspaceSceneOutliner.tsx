@@ -4,7 +4,7 @@ import type { ReactNode, SVGProps } from 'react'
 import { useSceneStore, useViewportStore, useUiStore } from '../../../../app/state'
 import { selectSelectedPlacementView } from '../../../../core/scene-domain'
 import {
-  createPoseStoreCommandDispatcher,
+  createAppCommandDispatcher,
   IconCamera,
   IconChevronDown,
   IconChevronRight,
@@ -72,7 +72,7 @@ export function WorkspaceSceneOutliner() {
   // UI state
   const sceneEventLog = useUiStore((state) => state.sceneEventLog)
 
-  const dispatchFromOutliner = createPoseStoreCommandDispatcher('ui.workspace_outliner')
+  const dispatchFromOutliner = createAppCommandDispatcher('ui.workspace_outliner')
 
   const [openSections, setOpenSections] = useState<Record<OutlinerSectionKey, boolean>>({
     cameras: true,

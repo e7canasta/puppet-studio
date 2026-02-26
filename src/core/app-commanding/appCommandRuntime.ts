@@ -298,7 +298,7 @@ export function listPoseStoreEngineCapabilities() {
   return statuses.sort((left, right) => left.id.localeCompare(right.id))
 }
 
-export function dispatchPoseStoreCommand(
+export function dispatchAppCommandRuntime(
   command: AppCommand,
   options?: { correlationId?: string | null; source?: string },
 ): AppCommandEnvelope {
