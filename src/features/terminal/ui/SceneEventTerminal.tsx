@@ -85,7 +85,7 @@ export function SceneEventTerminal({ layout = 'overlay' }: SceneEventTerminalPro
         <button
           type="button"
           className="event-terminal-head-button"
-          onClick={() => setCommandHistoryExpanded((expanded) => !expanded)}
+          onClick={() => setCommandHistoryExpanded(!commandHistoryExpanded)}
           title={`Toggle command history (${STUDIO_SHORTCUTS.terminal.transcript})`}
         >
           History {commandHistoryExpanded ? '▾' : '▸'}
@@ -96,7 +96,7 @@ export function SceneEventTerminal({ layout = 'overlay' }: SceneEventTerminalPro
         <button
           type="button"
           className="event-terminal-head-button"
-          onClick={() => setCommandPaletteOpen((open) => !open)}
+          onClick={() => setCommandPaletteOpen(!commandPaletteOpen)}
           title={`Quick command palette (${STUDIO_SHORTCUTS.terminal.palette})`}
         >
           Cmd {commandPaletteOpen ? '▾' : '▸'}

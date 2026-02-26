@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
-import { useSceneStore, useUiStore, useBridgeStore, useViewportStore } from '../../../app/state'
+import { useSceneStore, useUiStore, useBridgeStore, useViewportStore, useTerminalUiStore } from '../../../app/state'
 import { listPoseStoreEngineCapabilities } from '../../../core/app-commanding'
 import { runtimeConfig } from '../../../core/config'
-import type { SceneEventLevel } from '../../../core/observability'
 import { isPrimaryShortcut } from '../../../shared/shortcuts'
 import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
 import {
@@ -16,14 +15,6 @@ import {
   suggestTerminalCommands,
   stringifySceneEventPayload,
 } from '../model'
-
-type CommandHistoryEntry = {
-  at: string
-  commandsCount: number
-  input: string
-  message: string
-  status: 'error' | 'ok'
-}
 
 export function useSceneEventTerminalState() {
   // UI state
@@ -44,21 +35,40 @@ export function useSceneEventTerminalState() {
   // Viewport state
   const showDimensions = useViewportStore((state) => state.showDimensions)
 
-  const [sourceFilter, setSourceFilter] = useState('all')
-  const [kindFilter, setKindFilter] = useState('all')
-  const [sceneFilter, setSceneFilter] = useState('all')
-  const [levelFilter, setLevelFilter] = useState<'all' | SceneEventLevel>('all')
-  const [searchFilter, setSearchFilter] = useState('')
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-  const [commandInput, setCommandInput] = useState('')
-  const [commandHistory, setCommandHistory] = useState<CommandHistoryEntry[]>([])
-  const [commandHistoryExpanded, setCommandHistoryExpanded] = useState(false)
-  const [commandHistoryCursor, setCommandHistoryCursor] = useState<number | null>(null)
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
-  const [commandPaletteQuery, setCommandPaletteQuery] = useState('')
-  const [commandPaletteSelectedIndex, setCommandPaletteSelectedIndex] = useState(0)
-  const [commandSuggestionCursor, setCommandSuggestionCursor] = useState<number | null>(null)
-  const [dynamicInputEnabled, setDynamicInputEnabled] = useState(false)
+  // Terminal UI state (from dedicated store)
+  const sourceFilter = useTerminalUiStore((state) => state.sourceFilter)
+  const kindFilter = useTerminalUiStore((state) => state.kindFilter)
+  const sceneFilter = useTerminalUiStore((state) => state.sceneFilter)
+  const levelFilter = useTerminalUiStore((state) => state.levelFilter)
+  const searchFilter = useTerminalUiStore((state) => state.searchFilter)
+  const selectedEventId = useTerminalUiStore((state) => state.selectedEventId)
+  const commandInput = useTerminalUiStore((state) => state.commandInput)
+  const commandHistory = useTerminalUiStore((state) => state.commandHistory)
+  const commandHistoryExpanded = useTerminalUiStore((state) => state.commandHistoryExpanded)
+  const commandHistoryCursor = useTerminalUiStore((state) => state.commandHistoryCursor)
+  const commandPaletteOpen = useTerminalUiStore((state) => state.commandPaletteOpen)
+  const commandPaletteQuery = useTerminalUiStore((state) => state.commandPaletteQuery)
+  const commandPaletteSelectedIndex = useTerminalUiStore((state) => state.commandPaletteSelectedIndex)
+  const commandSuggestionCursor = useTerminalUiStore((state) => state.commandSuggestionCursor)
+  const dynamicInputEnabled = useTerminalUiStore((state) => state.dynamicInputEnabled)
+
+  const setSourceFilter = useTerminalUiStore((state) => state.setSourceFilter)
+  const setKindFilter = useTerminalUiStore((state) => state.setKindFilter)
+  const setSceneFilter = useTerminalUiStore((state) => state.setSceneFilter)
+  const setLevelFilter = useTerminalUiStore((state) => state.setLevelFilter)
+  const setSearchFilter = useTerminalUiStore((state) => state.setSearchFilter)
+  const setSelectedEventId = useTerminalUiStore((state) => state.setSelectedEventId)
+  const setCommandInput = useTerminalUiStore((state) => state.setCommandInput)
+  const setCommandHistoryExpanded = useTerminalUiStore((state) => state.setCommandHistoryExpanded)
+  const setCommandHistoryCursor = useTerminalUiStore((state) => state.setCommandHistoryCursor)
+  const setCommandPaletteOpen = useTerminalUiStore((state) => state.setCommandPaletteOpen)
+  const setCommandPaletteQuery = useTerminalUiStore((state) => state.setCommandPaletteQuery)
+  const setCommandPaletteSelectedIndex = useTerminalUiStore((state) => state.setCommandPaletteSelectedIndex)
+  const setCommandSuggestionCursor = useTerminalUiStore((state) => state.setCommandSuggestionCursor)
+  const setDynamicInputEnabled = useTerminalUiStore((state) => state.setDynamicInputEnabled)
+  const appendCommandHistory = useTerminalUiStore((state) => state.appendCommandHistory)
+  const resetCommandInput = useTerminalUiStore((state) => state.resetCommandInput)
+
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const commandInputRef = useRef<HTMLInputElement | null>(null)
   const commandPaletteInputRef = useRef<HTMLInputElement | null>(null)
@@ -163,20 +173,14 @@ export function useSceneEventTerminalState() {
         summary: `cmd ${result.input} -> ${result.message}`,
       })
 
-      setCommandHistory((history) => {
-        const nextHistory: CommandHistoryEntry = {
-          at: new Date().toISOString(),
-          commandsCount: result.commands.length,
-          input: result.input,
-          message: result.message,
-          status: result.status,
-        }
-        const next = [...history, nextHistory]
-        if (next.length <= 120) return next
-        return next.slice(next.length - 120)
+      appendCommandHistory({
+        at: new Date().toISOString(),
+        commandsCount: result.commands.length,
+        input: result.input,
+        message: result.message,
+        status: result.status,
       })
-      setCommandInput('')
-      setCommandHistoryCursor(null)
+      resetCommandInput()
     },
     [dispatchFromTerminal, terminalCommandContext],
   )
@@ -214,31 +218,28 @@ export function useSceneEventTerminalState() {
       if (event.key === 'ArrowUp') {
         if (commandHistory.length === 0) return
         event.preventDefault()
-        setCommandHistoryCursor((cursor) => {
-          const nextIndex = cursor === null ? commandHistory.length - 1 : Math.max(0, cursor - 1)
-          const historyItem = commandHistory[nextIndex]
-          if (historyItem) setCommandInput(historyItem.input)
-          return nextIndex
-        })
+        const nextIndex = commandHistoryCursor === null ? commandHistory.length - 1 : Math.max(0, commandHistoryCursor - 1)
+        const historyItem = commandHistory[nextIndex]
+        if (historyItem) {
+          setCommandInput(historyItem.input)
+          setCommandHistoryCursor(nextIndex)
+        }
         return
       }
 
       if (event.key === 'ArrowDown') {
         if (commandHistory.length === 0) return
         event.preventDefault()
-        setCommandHistoryCursor((cursor) => {
-          if (cursor === null) return null
-          const nextIndex = Math.min(commandHistory.length, cursor + 1)
-          const historyItem = commandHistory[nextIndex]
-          setCommandInput(historyItem ? historyItem.input : '')
-          return historyItem ? nextIndex : null
-        })
+        if (commandHistoryCursor === null) return
+        const nextIndex = Math.min(commandHistory.length, commandHistoryCursor + 1)
+        const historyItem = commandHistory[nextIndex]
+        setCommandInput(historyItem ? historyItem.input : '')
+        setCommandHistoryCursor(historyItem ? nextIndex : null)
         return
       }
 
       if (event.key === 'Escape') {
-        setCommandInput('')
-        setCommandHistoryCursor(null)
+        resetCommandInput()
         setCommandSuggestionCursor(null)
       }
 
@@ -253,7 +254,7 @@ export function useSceneEventTerminalState() {
         setCommandSuggestionCursor(nextIndex)
       }
     },
-    [commandHistory, commandInput, commandSuggestionCursor, commandSuggestions, executeTerminalCommand],
+    [commandHistory, commandHistoryCursor, commandInput, commandSuggestionCursor, commandSuggestions, executeTerminalCommand, resetCommandInput, setCommandHistoryCursor, setCommandInput, setCommandSuggestionCursor],
   )
 
   useEffect(() => {
@@ -268,14 +269,12 @@ export function useSceneEventTerminalState() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isPrimaryShortcut(event, 'j')) {
         event.preventDefault()
-        setCommandPaletteOpen((open) => {
-          const next = !open
-          if (next) {
-            setCommandPaletteQuery('')
-            setCommandPaletteSelectedIndex(0)
-          }
-          return next
-        })
+        const next = !commandPaletteOpen
+        setCommandPaletteOpen(next)
+        if (next) {
+          setCommandPaletteQuery('')
+          setCommandPaletteSelectedIndex(0)
+        }
         return
       }
 
@@ -287,13 +286,13 @@ export function useSceneEventTerminalState() {
 
       if (event.key === 'F2') {
         event.preventDefault()
-        setCommandHistoryExpanded((expanded) => !expanded)
+        setCommandHistoryExpanded(!commandHistoryExpanded)
         return
       }
 
       if (event.key === 'F12') {
         event.preventDefault()
-        setDynamicInputEnabled((enabled) => !enabled)
+        setDynamicInputEnabled(!dynamicInputEnabled)
       }
     }
 
@@ -301,7 +300,7 @@ export function useSceneEventTerminalState() {
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [dispatchFromTerminal])
+  }, [commandHistoryExpanded, commandPaletteOpen, dispatchFromTerminal, dynamicInputEnabled, setCommandHistoryExpanded, setCommandPaletteOpen, setCommandPaletteQuery, setCommandPaletteSelectedIndex, setDynamicInputEnabled])
 
   useEffect(() => {
     if (!sceneEventTerminalOpen || !dynamicInputEnabled) return
@@ -318,14 +317,14 @@ export function useSceneEventTerminalState() {
       if (event.key === 'ArrowDown') {
         if (commandPaletteItems.length <= 0) return
         event.preventDefault()
-        setCommandPaletteSelectedIndex((index) => (index + 1) % commandPaletteItems.length)
+        setCommandPaletteSelectedIndex((commandPaletteSelectedIndex + 1) % commandPaletteItems.length)
         return
       }
 
       if (event.key === 'ArrowUp') {
         if (commandPaletteItems.length <= 0) return
         event.preventDefault()
-        setCommandPaletteSelectedIndex((index) => (index - 1 + commandPaletteItems.length) % commandPaletteItems.length)
+        setCommandPaletteSelectedIndex((commandPaletteSelectedIndex - 1 + commandPaletteItems.length) % commandPaletteItems.length)
         return
       }
 
@@ -342,7 +341,7 @@ export function useSceneEventTerminalState() {
         closeCommandPalette()
       }
     },
-    [closeCommandPalette, commandPaletteItems, commandPaletteSelectedIndex, executePaletteCommand],
+    [closeCommandPalette, commandPaletteItems, commandPaletteSelectedIndex, executePaletteCommand, setCommandPaletteSelectedIndex],
   )
 
   return {

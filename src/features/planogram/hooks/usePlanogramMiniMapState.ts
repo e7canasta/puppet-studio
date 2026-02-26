@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { usePoseStore } from '../../../app/state'
+import { useAvatarStore, useBridgeStore, useSceneStore, useViewportStore } from '../../../app/state'
 import {
   selectMonitoringCamera,
   selectPlacementLegendItems,
@@ -13,33 +13,40 @@ import {
 } from '../model'
 
 export function usePlanogramMiniMapState() {
-  const cameraView = usePoseStore((state) => state.cameraView)
-  const avatarPlanPositionM = usePoseStore((state) => state.avatarPlanPositionM)
-  const avatarRotationDeg = usePoseStore((state) => state.avatarRotationDeg)
-  const avatarTrackId = usePoseStore((state) => state.avatarTrackId)
-  const sceneError = usePoseStore((state) => state.sceneError)
-  const sceneLastEventAt = usePoseStore((state) => state.sceneLastEventAt)
-  const scenePlacements = usePoseStore((state) => state.scenePlacements)
-  const sceneRevision = usePoseStore((state) => state.sceneRevision)
-  const sceneRemoteOverrideAt = usePoseStore((state) => state.sceneRemoteOverrideAt)
-  const sceneRemoteOverrideKind = usePoseStore((state) => state.sceneRemoteOverrideKind)
-  const sceneRoom = usePoseStore((state) => state.sceneRoom)
-  const sceneSequence = usePoseStore((state) => state.sceneSequence)
-  const sceneSource = usePoseStore((state) => state.sceneSource)
-  const sceneEditEnabled = usePoseStore((state) => state.sceneEditEnabled)
-  const sceneRemoteHoldEnabled = usePoseStore((state) => state.sceneRemoteHoldEnabled)
-  const sceneDeferredRemoteCount = usePoseStore((state) => state.sceneDeferredRemoteCount)
-  const sceneDeferredApplyPendingConfirm = usePoseStore((state) => state.sceneDeferredApplyPendingConfirm)
-  const sceneDeferredRemoteLastAt = usePoseStore((state) => state.sceneDeferredRemoteLastAt)
-  const sceneDeferredRemoteLastKind = usePoseStore((state) => state.sceneDeferredRemoteLastKind)
-  const monitoringCameras = usePoseStore((state) => state.monitoringCameras)
-  const projectionMode = usePoseStore((state) => state.projectionMode)
-  const selectedMonitoringCameraId = usePoseStore((state) => state.selectedMonitoringCameraId)
-  const selectedPlacementId = usePoseStore((state) => state.selectedPlacementId)
-  const sceneRedoDepth = usePoseStore((state) => state.sceneRedoDepth)
-  const sceneUndoDepth = usePoseStore((state) => state.sceneUndoDepth)
-  const showDimensions = usePoseStore((state) => state.showDimensions)
-  const topQuarterTurns = usePoseStore((state) => state.topQuarterTurns)
+  // Viewport state
+  const cameraView = useViewportStore((state) => state.cameraView)
+  const projectionMode = useViewportStore((state) => state.projectionMode)
+  const selectedMonitoringCameraId = useViewportStore((state) => state.selectedMonitoringCameraId)
+  const showDimensions = useViewportStore((state) => state.showDimensions)
+  const topQuarterTurns = useViewportStore((state) => state.topQuarterTurns)
+
+  // Avatar state
+  const avatarPlanPositionM = useAvatarStore((state) => state.avatarPlanPositionM)
+  const avatarRotationDeg = useAvatarStore((state) => state.avatarRotationDeg)
+  const avatarTrackId = useAvatarStore((state) => state.avatarTrackId)
+
+  // Scene state
+  const sceneError = useSceneStore((state) => state.sceneError)
+  const sceneLastEventAt = useSceneStore((state) => state.sceneLastEventAt)
+  const scenePlacements = useSceneStore((state) => state.scenePlacements)
+  const sceneRevision = useSceneStore((state) => state.sceneRevision)
+  const sceneRoom = useSceneStore((state) => state.sceneRoom)
+  const sceneSequence = useSceneStore((state) => state.sceneSequence)
+  const sceneSource = useSceneStore((state) => state.sceneSource)
+  const sceneEditEnabled = useSceneStore((state) => state.sceneEditEnabled)
+  const selectedPlacementId = useSceneStore((state) => state.selectedPlacementId)
+  const sceneRedoDepth = useSceneStore((state) => state.sceneRedoDepth)
+  const sceneUndoDepth = useSceneStore((state) => state.sceneUndoDepth)
+  const monitoringCameras = useSceneStore((state) => state.monitoringCameras)
+  const sceneRemoteOverrideAt = useSceneStore((state) => state.sceneRemoteOverrideAt)
+  const sceneRemoteOverrideKind = useSceneStore((state) => state.sceneRemoteOverrideKind)
+
+  // Bridge state
+  const sceneRemoteHoldEnabled = useBridgeStore((state) => state.sceneRemoteHoldEnabled)
+  const sceneDeferredRemoteCount = useBridgeStore((state) => state.sceneDeferredRemoteCount)
+  const sceneDeferredApplyPendingConfirm = useBridgeStore((state) => state.sceneDeferredApplyPendingConfirm)
+  const sceneDeferredRemoteLastAt = useBridgeStore((state) => state.sceneDeferredRemoteLastAt)
+  const sceneDeferredRemoteLastKind = useBridgeStore((state) => state.sceneDeferredRemoteLastKind)
 
   const selectedPlacementView = useMemo(
     () => selectSelectedPlacementView(scenePlacements, selectedPlacementId),

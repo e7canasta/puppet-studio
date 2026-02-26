@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-import { usePoseStore } from '../../../app/state'
+import { useSceneStore, useViewportStore } from '../../../app/state'
 import { SCENE_COMMAND_MOVE_STEP_M, SCENE_COMMAND_ROTATE_STEP_DEG, SCENE_COMMAND_SNAP_STEP_M } from '../../../core/config'
 import { isPrimaryShortcut } from '../../../shared/shortcuts'
 import { createPoseStoreCommandDispatcher } from '../../../shared/ui'
@@ -14,7 +14,8 @@ export function useSceneCommandHotkeys() {
       if (isEditableTarget(event.target)) return
 
       const key = event.key.toLowerCase()
-      const state = usePoseStore.getState()
+      const sceneState = useSceneStore.getState()
+      const viewportState = useViewportStore.getState()
 
       if (isPrimaryShortcut(event, '9')) {
         event.preventDefault()
@@ -29,7 +30,7 @@ export function useSceneCommandHotkeys() {
       }
 
       if ((event.ctrlKey || event.metaKey) && !event.altKey) {
-        if (!state.sceneEditEnabled) return
+        if (!sceneState.sceneEditEnabled) return
         if (!event.shiftKey && isPrimaryShortcut(event, 'z')) {
           event.preventDefault()
           dispatchFromHotkeys({ kind: 'undo_scene_edit' })
@@ -67,13 +68,13 @@ export function useSceneCommandHotkeys() {
         event.preventDefault()
         dispatchFromHotkeys({
           kind: 'set_show_dimensions',
-          show: !state.showDimensions,
+          show: !viewportState.showDimensions,
         })
         return
       }
 
-      if (!state.sceneEditEnabled) return
-      if (!state.selectedPlacementId) return
+      if (!sceneState.sceneEditEnabled) return
+      if (!sceneState.selectedPlacementId) return
 
       const moveStep = event.shiftKey ? SCENE_COMMAND_MOVE_STEP_M * 5 : SCENE_COMMAND_MOVE_STEP_M
       const rotateStep = event.shiftKey ? SCENE_COMMAND_ROTATE_STEP_DEG * 3 : SCENE_COMMAND_ROTATE_STEP_DEG

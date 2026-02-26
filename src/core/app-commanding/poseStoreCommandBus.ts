@@ -6,7 +6,6 @@ import {
   type AppCommandPort,
 } from './appCommandBus'
 import { reflectAppCommandToTerminalLine } from './commandReflection'
-import { usePoseStore } from '../../app/state/poseStore'
 import { useSceneStore, useViewportStore, useBridgeStore, useAvatarStore, useUiStore } from '../../app/state'
 import { sceneService, bridgeService } from '../../services'
 import { createEngineRuntime, type EngineCapability } from '../engine'
@@ -14,7 +13,12 @@ import { createEngineSimPreviewCapability, createEngineStatsCapability } from '.
 import { resolveEngineCapabilityDefaultEnabled, runtimeConfig } from '../config'
 import { dispatchWorkspaceShellCommand } from '../workspace-shell'
 
-type PoseStoreState = ReturnType<typeof usePoseStore.getState>
+// Legacy type for engine runtime - combines all modular stores
+type PoseStoreState = ReturnType<typeof useSceneStore.getState> &
+  ReturnType<typeof useViewportStore.getState> &
+  ReturnType<typeof useBridgeStore.getState> &
+  ReturnType<typeof useAvatarStore.getState> &
+  ReturnType<typeof useUiStore.getState>
 
 export type PoseStoreEngineCapabilityEvent = {
   [key: string]: unknown
@@ -175,7 +179,13 @@ const poseStoreEngineRuntime = createEngineRuntime<AppCommand, PoseStoreEngineCa
       summary: `engine ${event.kind} (${event.source})`,
     })
   },
-  getState: () => usePoseStore.getState(),
+  getState: () => ({
+    ...useSceneStore.getState(),
+    ...useViewportStore.getState(),
+    ...useBridgeStore.getState(),
+    ...useAvatarStore.getState(),
+    ...useUiStore.getState(),
+  }),
   onCapabilityError: ({ capabilityId, command, error }) => {
     const sceneStore = useSceneStore.getState()
     const uiStore = useUiStore.getState()

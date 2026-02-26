@@ -1,5 +1,8 @@
 import type { PlanogramDefinition, Vec2, Vec3 } from './types'
 
+// Re-export from shared-math
+export { degToRad } from '../shared-math'
+
 export const WORLD_UNITS_PER_METER = 1
 export const GRID_MINOR_STEP_M = 0.5
 export const GRID_MAJOR_STEP_M = 1
@@ -20,10 +23,6 @@ export const DEFAULT_PLANOGRAM: PlanogramDefinition = {
     widthM: 4.0,
   },
   placements: [],
-}
-
-export function degToRad(degrees: number) {
-  return (degrees * Math.PI) / 180
 }
 
 export function metersToWorld(valueInMeters: number) {

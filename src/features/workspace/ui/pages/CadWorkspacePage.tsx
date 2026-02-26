@@ -1,44 +1,31 @@
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 
-import { usePoseStore } from '../../../../app/state'
+import { useSceneStore, useViewportStore, useBridgeStore, useUiStore } from '../../../../app/state'
 import { listPoseStoreEngineCapabilities } from '../../../../core/app-commanding'
-import { SCENE_COMMAND_SNAP_STEP_M } from '../../../../core/config'
 import type { WorkspaceWidgetId } from '../../../../core/workspace-shell'
-import { STUDIO_SHORTCUTS } from '../../../../shared/shortcuts'
 import {
   createPoseStoreCommandDispatcher,
   IconCamera,
-  IconCube,
-  IconMeasure,
-  IconMove,
   IconOutliner,
   IconPlanogram,
-  IconRotate,
-  IconSelect,
-  IconSimulate,
-  IconSnap,
   IconSliders,
-  IconStats,
 } from '../../../../shared/ui'
+import { STUDIO_SHORTCUTS } from '../../../../shared/shortcuts'
 import { useWorkspaceHudState } from '../../hooks'
+import { buildWorkspaceQuickActions } from '../../model'
 import {
   WORKSPACE_COMMAND_PALETTE_EVENT,
   WorkspaceCommandPalette,
-  type WorkspaceQuickAction,
 } from '../components/WorkspaceCommandPalette'
-import { WorkspaceAxisGizmo } from '../components/WorkspaceAxisGizmo'
 import { WorkspaceDockManager } from '../components/WorkspaceDockManager'
 import { WorkspaceHeaderBar } from '../components/WorkspaceHeaderBar'
 import { WorkspaceSceneOutliner } from '../components/WorkspaceSceneOutliner'
 import { WorkspaceStatusBar } from '../components/WorkspaceStatusBar'
-import { WorkspaceViewportAxisReference } from '../components/WorkspaceViewportAxisReference'
-import { WorkspaceViewCube } from '../components/WorkspaceViewCube'
+import { WorkspaceToolrail } from '../components/WorkspaceToolrail'
+import { WorkspaceViewportShell } from '../components/WorkspaceViewportShell'
 import { WorkspaceWidgetCard } from '../components/WorkspaceWidgetCard'
 
-const PuppetScene = lazy(() =>
-  import('../../../scene/ui/PuppetScene').then((module) => ({ default: module.PuppetScene })),
-)
 const PoseControlPanel = lazy(() =>
   import('../../../pose/ui/PoseControlPanel').then((module) => ({ default: module.PoseControlPanel })),
 )
@@ -62,33 +49,34 @@ type ResizeStart = {
   y: number
 }
 
-function formatCameraViewLabel(view: 'iso' | 'top' | 'front' | 'back' | 'left' | 'right' | 'sensor'): string {
-  if (view === 'iso') return 'iso view'
-  if (view === 'sensor') return 'cam'
-  return view
-}
-
 export function CadWorkspacePage() {
-  const bridgeStatus = usePoseStore((state) => state.bridgeStatus)
-  const bridgeUrl = usePoseStore((state) => state.bridgeUrl)
-  const cameraView = usePoseStore((state) => state.cameraView)
-  const viewportCameraQuaternion = usePoseStore((state) => state.viewportCameraQuaternion)
-  const monitoringCameraCount = usePoseStore((state) => state.monitoringCameras.length)
-  const projectionMode = usePoseStore((state) => state.projectionMode)
-  const sceneEditEnabled = usePoseStore((state) => state.sceneEditEnabled)
-  const sceneEventTerminalOpen = usePoseStore((state) => state.sceneEventTerminalOpen)
-  const sceneId = usePoseStore((state) => state.sceneId)
-  const scenePlacementsCount = usePoseStore((state) => state.scenePlacements.length)
-  const sceneRemoteHoldEnabled = usePoseStore((state) => state.sceneRemoteHoldEnabled)
-  const sceneRevision = usePoseStore((state) => state.sceneRevision)
-  const sceneSequence = usePoseStore((state) => state.sceneSequence)
-  const sceneEventLogCount = usePoseStore((state) => state.sceneEventLog.length)
-  const activeTool = usePoseStore((state) => state.activeToolMode)
-  const selectedPlacementId = usePoseStore((state) => state.selectedPlacementId)
-  const showDimensions = usePoseStore((state) => state.showDimensions)
-  const detectionCount = usePoseStore((state) =>
+  // Bridge state
+  const bridgeStatus = useBridgeStore((state) => state.bridgeStatus)
+  const bridgeUrl = useBridgeStore((state) => state.bridgeUrl)
+  const sceneRemoteHoldEnabled = useBridgeStore((state) => state.sceneRemoteHoldEnabled)
+
+  // Viewport state
+  const cameraView = useViewportStore((state) => state.cameraView)
+  const viewportCameraQuaternion = useViewportStore((state) => state.viewportCameraQuaternion)
+  const projectionMode = useViewportStore((state) => state.projectionMode)
+  const showDimensions = useViewportStore((state) => state.showDimensions)
+
+  // Scene state
+  const monitoringCameraCount = useSceneStore((state) => state.monitoringCameras.length)
+  const sceneEditEnabled = useSceneStore((state) => state.sceneEditEnabled)
+  const sceneId = useSceneStore((state) => state.sceneId)
+  const scenePlacementsCount = useSceneStore((state) => state.scenePlacements.length)
+  const sceneRevision = useSceneStore((state) => state.sceneRevision)
+  const sceneSequence = useSceneStore((state) => state.sceneSequence)
+  const selectedPlacementId = useSceneStore((state) => state.selectedPlacementId)
+  const detectionCount = useSceneStore((state) =>
     state.cameraDetectionOverlays.reduce((total, overlay) => total + overlay.boxes.length, 0),
   )
+
+  // UI state
+  const sceneEventTerminalOpen = useUiStore((state) => state.sceneEventTerminalOpen)
+  const sceneEventLogCount = useUiStore((state) => state.sceneEventLog.length)
+  const activeTool = useUiStore((state) => state.activeToolMode)
   const activeCapabilities = useMemo(
     () => listPoseStoreEngineCapabilities().filter((capability) => capability.enabled).length,
     [sceneEventLogCount],
@@ -213,229 +201,27 @@ export function CadWorkspacePage() {
     ],
   )
 
-  const quickActions = useMemo<WorkspaceQuickAction[]>(
-    () => [
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_workspace_left_panel' }),
-        group: 'Layout',
-        id: 'toggle_left_panel',
-        keywords: 'layout panel left properties',
-        label: leftPanelOpen ? 'Hide Left Panel' : 'Show Left Panel',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_workspace_right_panel' }),
-        group: 'Layout',
-        id: 'toggle_right_panel',
-        keywords: 'layout panel right outliner',
-        label: rightPanelOpen ? 'Hide Right Panel' : 'Show Right Panel',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_scene_event_terminal' }),
-        group: 'Terminal',
-        id: 'toggle_terminal',
-        keywords: 'terminal event log',
-        label: sceneEventTerminalOpen ? 'Hide Terminal' : 'Show Terminal',
-        shortcut: STUDIO_SHORTCUTS.terminal.toggle,
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_scene_edit' }),
-        group: 'Scene',
-        id: 'toggle_edit',
-        keywords: 'scene edit mode',
-        label: sceneEditEnabled ? 'Disable Edit Mode' : 'Enable Edit Mode',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_scene_remote_hold' }),
-        group: 'Scene',
-        id: 'toggle_remote_hold',
-        keywords: 'remote hold sync',
-        label: sceneRemoteHoldEnabled ? 'Disable Remote Hold' : 'Enable Remote Hold',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'iso' }),
-        group: 'View',
-        id: 'view_iso',
-        keywords: 'camera view iso',
-        label: 'Switch View: Iso View',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'top' }),
-        group: 'View',
-        id: 'view_top',
-        keywords: 'camera view top',
-        label: 'Switch View: Top',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'front' }),
-        group: 'View',
-        id: 'view_front',
-        keywords: 'camera view front',
-        label: 'Switch View: Front',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'back' }),
-        group: 'View',
-        id: 'view_back',
-        keywords: 'camera view back rear',
-        label: 'Switch View: Back',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'left' }),
-        group: 'View',
-        id: 'view_left',
-        keywords: 'camera view left lateral',
-        label: 'Switch View: Left',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'right' }),
-        group: 'View',
-        id: 'view_right',
-        keywords: 'camera view right lateral',
-        label: 'Switch View: Right',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'sensor' }),
-        group: 'View',
-        id: 'view_sensor',
-        keywords: 'camera view sensor cam',
-        label: 'Switch View: Cam',
-      },
-      {
-        execute: () =>
-          dispatchFromWorkspace({
-            kind: 'set_projection_mode',
-            mode: projectionMode === 'orthographic' ? 'perspective' : 'orthographic',
-          }),
-        group: 'View',
-        id: 'toggle_projection_mode',
-        keywords: 'projection ortho perspective',
-        label: projectionMode === 'orthographic' ? 'Projection: Perspective' : 'Projection: Orthographic',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'select' }),
-        group: 'Tools',
-        id: 'tool_select',
-        keywords: 'tool select cursor',
-        label: activeTool === 'select' ? 'Tool: Select (active)' : 'Tool: Select',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'move' }),
-        group: 'Tools',
-        id: 'tool_move',
-        keywords: 'tool move transform',
-        label: activeTool === 'move' ? 'Tool: Move (active)' : 'Tool: Move',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'rotate' }),
-        group: 'Tools',
-        id: 'tool_rotate',
-        keywords: 'tool rotate transform',
-        label: activeTool === 'rotate' ? 'Tool: Rotate (active)' : 'Tool: Rotate',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'request_engine_stats' }),
-        group: 'Engine',
-        id: 'request_engine_stats',
-        keywords: 'engine stats telemetry',
-        label: 'Request Engine Stats',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'request_engine_sim_preview' }),
-        group: 'Engine',
-        id: 'request_engine_sim_preview',
-        keywords: 'engine sim preview',
-        label: 'Request Simulation Preview',
-      },
-      {
-        execute: () => {
-          if (!selectedPlacementId) return
-          dispatchFromWorkspace({
-            kind: 'run_scene_command',
-            command: { kind: 'snap_selected_to_grid', stepM: SCENE_COMMAND_SNAP_STEP_M },
-          })
+  const quickActions = useMemo(
+    () =>
+      buildWorkspaceQuickActions(
+        {
+          activeTool,
+          leftPanelOpen,
+          projectionMode,
+          rightPanelOpen,
+          sceneEditEnabled,
+          sceneEventTerminalOpen,
+          sceneRemoteHoldEnabled,
+          selectedPlacementId,
+          showDimensions,
+          widgets,
         },
-        group: 'Tools',
-        id: 'snap_selected_to_grid',
-        keywords: 'scene snap grid align placement',
-        label: selectedPlacementId ? 'Snap Selected Placement' : 'Snap Selected Placement (select one first)',
-        shortcut: STUDIO_SHORTCUTS.scene.snap,
-      },
-      {
-        execute: () =>
-          dispatchFromWorkspace({
-            kind: 'set_show_dimensions',
-            show: !showDimensions,
-          }),
-        group: 'Tools',
-        id: 'toggle_dimensions',
-        keywords: 'measure dimensions overlay',
-        label: showDimensions ? 'Hide Dimensions Overlay' : 'Show Dimensions Overlay',
-        shortcut: STUDIO_SHORTCUTS.scene.measure,
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'apply_workspace_layout_preset', preset: 'focus' }),
-        group: 'Layout',
-        id: 'apply_layout_focus',
-        keywords: 'layout preset focus',
-        label: 'Layout Preset: Focus',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'apply_workspace_layout_preset', preset: 'authoring' }),
-        group: 'Layout',
-        id: 'apply_layout_authoring',
-        keywords: 'layout preset authoring',
-        label: 'Layout Preset: Authoring',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'apply_workspace_layout_preset', preset: 'observability' }),
-        group: 'Layout',
-        id: 'apply_layout_observability',
-        keywords: 'layout preset observability',
-        label: 'Layout Preset: Observability',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'restore_workspace_layout_defaults' }),
-        group: 'Layout',
-        id: 'restore_layout_defaults',
-        keywords: 'layout reset defaults',
-        label: 'Restore Layout Defaults',
-      },
-      {
-        execute: () => dispatchFromWorkspace({ kind: 'toggle_workspace_widget_collapsed', widget: 'outliner' }),
-        group: 'Widgets',
-        id: 'toggle_outliner_collapsed',
-        keywords: 'widget outliner collapse expand',
-        label: widgets.outliner.collapsed ? 'Expand Outliner Widget' : 'Collapse Outliner Widget',
-      },
-      {
-        execute: () =>
-          dispatchFromWorkspace({
-            kind: 'set_workspace_widget_visible',
-            visible: !widgets.camera.visible,
-            widget: 'camera',
-          }),
-        group: 'Widgets',
-        id: 'toggle_camera_widget',
-        keywords: 'widget camera show hide',
-        label: widgets.camera.visible ? 'Hide Camera Widget' : 'Show Camera Widget',
-      },
-      {
-        execute: () =>
-          dispatchFromWorkspace({
-            kind: 'set_workspace_widget_visible',
-            visible: !widgets.planogram.visible,
-            widget: 'planogram',
-          }),
-        group: 'Widgets',
-        id: 'toggle_planogram_widget',
-        keywords: 'widget planogram show hide',
-        label: widgets.planogram.visible ? 'Hide Planogram Widget' : 'Show Planogram Widget',
-      },
-    ],
+        dispatchFromWorkspace,
+      ),
     [
+      activeTool,
       dispatchFromWorkspace,
       leftPanelOpen,
-      activeTool,
       projectionMode,
       rightPanelOpen,
       sceneEditEnabled,
@@ -443,9 +229,7 @@ export function CadWorkspacePage() {
       sceneRemoteHoldEnabled,
       selectedPlacementId,
       showDimensions,
-      widgets.camera.visible,
-      widgets.outliner.collapsed,
-      widgets.planogram.visible,
+      widgets,
     ],
   )
 
@@ -514,194 +298,25 @@ export function CadWorkspacePage() {
         {showPropertiesWidget ? <div className="workspace-resize-handle vertical" onPointerDown={beginResize('left')} /> : null}
 
         <section className="workspace-center">
-          <div className="workspace-toolrail">
-            <button
-              type="button"
-              className={activeTool === 'select' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'select' })}
-              title="Select tool"
-            >
-              <IconSelect className="workspace-toolrail-icon" />
-              Sel
-            </button>
-            <button
-              type="button"
-              className={activeTool === 'move' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'move' })}
-              title="Move tool"
-            >
-              <IconMove className="workspace-toolrail-icon" />
-              Mv
-            </button>
-            <button
-              type="button"
-              className={activeTool === 'rotate' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_active_tool', mode: 'rotate' })}
-              title="Rotate tool"
-            >
-              <IconRotate className="workspace-toolrail-icon" />
-              Rot
-            </button>
-            <div className="workspace-toolrail-separator" />
-            <button
-              type="button"
-              className={cameraView === 'iso' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'iso' })}
-              title="Isometric view"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              IsoV
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'front' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'front' })}
-              title="Front view"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              Fr
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'right' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'right' })}
-              title="Right view"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              Rt
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'left' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'left' })}
-              title="Left view"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              Lf
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'back' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'back' })}
-              title="Back view"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              Bk
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'top' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'top' })}
-              title="Top view"
-            >
-              <IconRotate className="workspace-toolrail-icon" />
-              Top
-            </button>
-            <button
-              type="button"
-              className={cameraView === 'sensor' ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_camera_view', view: 'sensor' })}
-              title="Camera view"
-            >
-              <IconCamera className="workspace-toolrail-icon" />
-              Cam
-            </button>
-            <button
-              type="button"
-              className={projectionMode === 'orthographic' ? 'active' : ''}
-              onClick={() =>
-                dispatchFromWorkspace({
-                  kind: 'set_projection_mode',
-                  mode: projectionMode === 'orthographic' ? 'perspective' : 'orthographic',
-                })
-              }
-              title="Toggle projection"
-            >
-              <IconCube className="workspace-toolrail-icon" />
-              {projectionMode === 'orthographic' ? 'Ortho' : 'Persp'}
-            </button>
-            <button type="button" onClick={() => dispatchFromWorkspace({ kind: 'request_engine_stats' })} title="Engine stats">
-              <IconStats className="workspace-toolrail-icon" />
-              Stats
-            </button>
-            <button
-              type="button"
-              onClick={() => dispatchFromWorkspace({ kind: 'request_engine_sim_preview' })}
-              title="Simulation preview"
-            >
-              <IconSimulate className="workspace-toolrail-icon" />
-              Sim
-            </button>
-            <div className="workspace-toolrail-separator" />
-            <button
-              type="button"
-              onClick={() =>
-                dispatchFromWorkspace({
-                  kind: 'run_scene_command',
-                  command: { kind: 'snap_selected_to_grid', stepM: SCENE_COMMAND_SNAP_STEP_M },
-                })
-              }
-              disabled={!canSnapSelection}
-              title={`Snap selected placement (${STUDIO_SHORTCUTS.scene.snap})`}
-            >
-              <IconSnap className="workspace-toolrail-icon" />
-              Snap
-            </button>
-            <button
-              type="button"
-              className={showDimensions ? 'active' : ''}
-              onClick={() => dispatchFromWorkspace({ kind: 'set_show_dimensions', show: !showDimensions })}
-              title={`Toggle dimensions overlay (${STUDIO_SHORTCUTS.scene.measure})`}
-            >
-              <IconMeasure className="workspace-toolrail-icon" />
-              Dims
-            </button>
-          </div>
-          <div className="workspace-viewport-shell">
-            <Suspense fallback={<div className="scene-shell-loading">Loading scene...</div>}>
-              <PuppetScene />
-            </Suspense>
-            <WorkspaceViewportAxisReference />
-            <div className="workspace-viewport-overlay">
-              <div className="workspace-viewport-overlay-line">
-                <span>{sceneId}</span>
-                <span>|</span>
-                <span>{formatCameraViewLabel(cameraView)}</span>
-                <span>|</span>
-                <span
-                  className={`workspace-projection-badge ${projectionMode === 'orthographic' ? 'orthographic' : 'perspective'}`}
-                >
-                  {projectionMode === 'orthographic' ? 'ORTHO' : 'PERSP'}
-                </span>
-              </div>
-              <div className="workspace-viewport-overlay-line muted">
-                <span>entities: {scenePlacementsCount}</span>
-                <span>|</span>
-                <span>cams: {monitoringCameraCount}</span>
-                <span>|</span>
-                <span>det: {detectionCount}</span>
-                <span>|</span>
-                <span>tool: {activeTool}</span>
-              </div>
-            </div>
-            <div className="workspace-viewport-gizmo">
-              <WorkspaceAxisGizmo cameraQuaternion={viewportCameraQuaternion} />
-            </div>
-            <div className="workspace-viewport-viewcube">
-              <WorkspaceViewCube
-                cameraView={cameraView}
-                cameraQuaternion={viewportCameraQuaternion}
-                projectionMode={projectionMode}
-                onSetCameraView={(view) => dispatchFromWorkspace({ kind: 'set_camera_view', view })}
-                onToggleProjectionMode={() =>
-                  dispatchFromWorkspace({
-                    kind: 'set_projection_mode',
-                    mode: projectionMode === 'orthographic' ? 'perspective' : 'orthographic',
-                  })
-                }
-              />
-            </div>
-          </div>
+          <WorkspaceToolrail
+            activeTool={activeTool}
+            cameraView={cameraView}
+            canSnapSelection={canSnapSelection}
+            dispatch={dispatchFromWorkspace}
+            projectionMode={projectionMode}
+            showDimensions={showDimensions}
+          />
+          <WorkspaceViewportShell
+            activeTool={activeTool}
+            cameraQuaternion={viewportCameraQuaternion}
+            cameraView={cameraView}
+            detectionCount={detectionCount}
+            dispatch={dispatchFromWorkspace}
+            monitoringCameraCount={monitoringCameraCount}
+            projectionMode={projectionMode}
+            sceneId={sceneId}
+            scenePlacementsCount={scenePlacementsCount}
+          />
         </section>
 
         {rightPanelOpen && anyRightWidgetVisible ? <div className="workspace-resize-handle vertical" onPointerDown={beginResize('right')} /> : null}

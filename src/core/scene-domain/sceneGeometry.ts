@@ -1,3 +1,4 @@
+import { degToRad as degToRadShared } from '../shared-math'
 import { ASSET_CATALOG } from '../planogram-domain/catalog'
 import { metersToWorld } from '../planogram-domain/layout'
 import { getPlacementTargetSizeM } from '../planogram-domain/sync'
@@ -17,9 +18,8 @@ export type PlanHalfExtents2D = {
   z: number
 }
 
-export function degToRad(degrees: number): number {
-  return (degrees * Math.PI) / 180
-}
+// Re-export from shared-math
+export const degToRad = degToRadShared
 
 export function normalizeDeg(value: number): number {
   const normalized = ((value % 360) + 360) % 360

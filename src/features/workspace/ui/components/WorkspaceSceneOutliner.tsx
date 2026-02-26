@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode, SVGProps } from 'react'
 
-import { usePoseStore } from '../../../../app/state'
+import { useSceneStore, useViewportStore, useUiStore } from '../../../../app/state'
 import { selectSelectedPlacementView } from '../../../../core/scene-domain'
 import {
   createPoseStoreCommandDispatcher,
@@ -57,15 +57,21 @@ function formatFixed(value: number): string {
 }
 
 export function WorkspaceSceneOutliner() {
-  const sceneId = usePoseStore((state) => state.sceneId)
-  const sceneRevision = usePoseStore((state) => state.sceneRevision)
-  const sceneSequence = usePoseStore((state) => state.sceneSequence)
-  const scenePlacements = usePoseStore((state) => state.scenePlacements)
-  const selectedPlacementId = usePoseStore((state) => state.selectedPlacementId)
-  const monitoringCameras = usePoseStore((state) => state.monitoringCameras)
-  const selectedMonitoringCameraId = usePoseStore((state) => state.selectedMonitoringCameraId)
-  const cameraDetectionOverlays = usePoseStore((state) => state.cameraDetectionOverlays)
-  const sceneEventLog = usePoseStore((state) => state.sceneEventLog)
+  // Scene state
+  const sceneId = useSceneStore((state) => state.sceneId)
+  const sceneRevision = useSceneStore((state) => state.sceneRevision)
+  const sceneSequence = useSceneStore((state) => state.sceneSequence)
+  const scenePlacements = useSceneStore((state) => state.scenePlacements)
+  const selectedPlacementId = useSceneStore((state) => state.selectedPlacementId)
+  const monitoringCameras = useSceneStore((state) => state.monitoringCameras)
+  const cameraDetectionOverlays = useSceneStore((state) => state.cameraDetectionOverlays)
+
+  // Viewport state
+  const selectedMonitoringCameraId = useViewportStore((state) => state.selectedMonitoringCameraId)
+
+  // UI state
+  const sceneEventLog = useUiStore((state) => state.sceneEventLog)
+
   const dispatchFromOutliner = createPoseStoreCommandDispatcher('ui.workspace_outliner')
 
   const [openSections, setOpenSections] = useState<Record<OutlinerSectionKey, boolean>>({
