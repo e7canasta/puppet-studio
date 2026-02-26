@@ -8,8 +8,8 @@ import {
   type MonitoringCameraDefinition,
   parseSceneSnapshotFromBridge,
   type SceneSpecialistMeta,
-} from '../../planogram'
-import type { Placement, RoomDefinition } from '../../planogram'
+} from '../../core/planogram-domain'
+import type { Placement, RoomDefinition } from '../../core/planogram-domain'
 import { clampAxis, createDefaultPose } from '../../poseControls'
 import type { AxisKey, PartKey, PoseControls } from '../../poseControls'
 import type { SceneCommand } from '../../core/scene-domain/sceneCommands'
