@@ -2,6 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
 ## Project Overview
 
 Puppet Studio is a CAD-like 3D workspace application for visualizing and simulating scenes with human body poses (ragdoll physics), room planning (planogram), and monitoring camera overlays. Part of the care-simulator system for healthcare/assisted living monitoring.
@@ -79,10 +80,44 @@ lib/
 
 ### Architectural Improvements (2025 Refactor)
 
-1. **Store Separation**: Giant poseStore (~1000 lines, 60+ properties) split into focused stores
+1. **Store Separation**: Giant poseStore (~1000 lines, 60+ properties) **ELIMINATED** - split into focused stores
 2. **No State Duplication**: Scene engine IS the store, not wrapped and duplicated
 3. **Service Coordination**: Business logic that crosses stores moved to service layer
 4. **Consistent Domain Layout**: All domain logic in `core/`, UI in `features/`
+5. **Command Bus Migration**: `poseStoreCommandBus` now delegates to modular stores transparently
+
+## Migration Notes (Feb 2025)
+
+### What Changed
+
+**Before**: Single monolithic `poseStore.ts` (~1040 lines) handling ALL state:
+- Viewport, scene, bridge, avatar, UI state all mixed together
+- Features directly imported `usePoseStore` everywhere
+- 14+ selector calls in a single hook to avoid re-renders
+
+**After**: Five focused stores + service layer:
+- `viewportStore`: Camera, projection, viewport settings
+- `sceneStore`: Scene placements, room, undo/redo (wraps SceneEngine)
+- `bridgeStore`: WebSocket connection, deferred sync queue
+- `avatarStore`: Avatar pose and position
+- `uiStore`: Terminal, tool mode, event log
+- `sceneService` + `bridgeService`: Cross-store coordination
+
+### For New Contributors
+
+- **Never import from `poseStore`** - it no longer exists
+- Use specific stores: `useSceneStore`, `useViewportStore`, etc.
+- For complex operations crossing stores, use `sceneService` or `bridgeService`
+- Command bus (`dispatchPoseStoreCommand`) still works - it delegates internally
+
+### Testing
+
+Basic store tests available at `src/app/state/__tests__/stores.test.ts`
+
+Run with:
+```bash
+npm test  # (when Jest/Vitest is configured)
+```
 
 ### Environment Variables
 
@@ -91,3 +126,5 @@ Configure via `VITE_*` environment variables:
 - `VITE_FRONTEND_SCENE_EDIT_ENABLED` - Enable scene editing (default: true)
 - `VITE_FRONTEND_SCENE_UNDO_LIMIT` - Undo history limit (default: 80)
 - `VITE_FRONTEND_SCENE_DEFERRED_AUTO_APPLY_ON_RELEASE` - Auto-apply deferred changes
+
+
