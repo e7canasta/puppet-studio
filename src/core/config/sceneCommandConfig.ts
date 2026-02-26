@@ -1,0 +1,3 @@
+export const SCENE_COMMAND_MOVE_STEP_M = 0.1
+export const SCENE_COMMAND_ROTATE_STEP_DEG = 15
+export const SCENE_COMMAND_SNAP_STEP_M = 0.05

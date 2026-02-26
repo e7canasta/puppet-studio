@@ -1,0 +1,9 @@
+dist/**
+dist/
+models/**
+models/
+node_modules/
+node_modules/**
+
+archive/
+archive/**
