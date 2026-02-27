@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 import type { WorkspaceWidgetId } from '../../../../core/workspace-shell'
 import { IconCamera, IconOutliner, IconPlanogram } from '../../../../shared/ui'
 import { WorkspaceSceneOutliner } from '../components/WorkspaceSceneOutliner'
@@ -10,8 +10,6 @@ const CameraSubspaceMap = lazy(() =>
 const PlanogramMiniMap = lazy(() =>
   import('../../../planogram/ui/PlanogramMiniMap').then((module) => ({ default: module.PlanogramMiniMap })),
 )
-
-import { lazy } from 'react'
 
 interface WorkspaceRightPanelProps {
   selectors: {

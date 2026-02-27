@@ -185,6 +185,70 @@ commandRegistry.register({
     },
 })
 
+commandRegistry.register({
+    id: 'set_workspace_left_panel_size',
+    category: 'workspace',
+    label: 'Set Left Panel Size',
+    description: 'Ajusta el ancho del panel izquierdo.',
+    terminalAliases: ['panel-left'],
+    terminalUsage: 'panel-left <pixels>',
+    toTerminalLine: (cmd) => `panel-left ${cmd.sizePx}`,
+    fromTerminalArgs: (args) => {
+        const sizePx = parseInt(args[0], 10)
+        if (isNaN(sizePx)) return commandError('Usage: panel-left <pixels>')
+        return { commands: [{ kind: 'set_workspace_left_panel_size', sizePx }], message: `left panel size set to ${sizePx}px` }
+    },
+    flags: { undoable: false, reflectsToTerminal: true },
+})
+
+commandRegistry.register({
+    id: 'set_workspace_right_panel_size',
+    category: 'workspace',
+    label: 'Set Right Panel Size',
+    description: 'Ajusta el ancho del panel derecho.',
+    terminalAliases: ['panel-right'],
+    terminalUsage: 'panel-right <pixels>',
+    toTerminalLine: (cmd) => `panel-right ${cmd.sizePx}`,
+    fromTerminalArgs: (args) => {
+        const sizePx = parseInt(args[0], 10)
+        if (isNaN(sizePx)) return commandError('Usage: panel-right <pixels>')
+        return { commands: [{ kind: 'set_workspace_right_panel_size', sizePx }], message: `right panel size set to ${sizePx}px` }
+    },
+    flags: { undoable: false, reflectsToTerminal: true },
+})
+
+commandRegistry.register({
+    id: 'set_workspace_terminal_height',
+    category: 'workspace',
+    label: 'Set Terminal Height',
+    description: 'Ajusta la altura del terminal.',
+    terminalAliases: ['terminal-height'],
+    terminalUsage: 'terminal-height <pixels>',
+    toTerminalLine: (cmd) => `terminal-height ${cmd.sizePx}`,
+    fromTerminalArgs: (args) => {
+        const sizePx = parseInt(args[0], 10)
+        if (isNaN(sizePx)) return commandError('Usage: terminal-height <pixels>')
+        return { commands: [{ kind: 'set_workspace_terminal_height', sizePx }], message: `terminal height set to ${sizePx}px` }
+    },
+    flags: { undoable: false, reflectsToTerminal: true },
+})
+
+commandRegistry.register({
+    id: 'set_workspace_outliner_height',
+    category: 'workspace',
+    label: 'Set Outliner Height',
+    description: 'Ajusta la altura del widget outliner.',
+    terminalAliases: ['outliner-height'],
+    terminalUsage: 'outliner-height <pixels>',
+    toTerminalLine: (cmd) => `outliner-height ${cmd.sizePx}`,
+    fromTerminalArgs: (args) => {
+        const sizePx = parseInt(args[0], 10)
+        if (isNaN(sizePx)) return commandError('Usage: outliner-height <pixels>')
+        return { commands: [{ kind: 'set_workspace_outliner_height', sizePx }], message: `outliner height set to ${sizePx}px` }
+    },
+    flags: { undoable: false, reflectsToTerminal: true },
+})
+
 // === UI ===
 commandRegistry.register({
     id: 'set_active_tool',

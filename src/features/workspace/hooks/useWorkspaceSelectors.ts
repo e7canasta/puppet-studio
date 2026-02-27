@@ -1,13 +1,18 @@
 import { useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 
-import { useBridgeStore, useSceneStore, useUiStore, useViewportStore } from '../../../app/state'
+import { useBridgeStore, useSceneStore, useUiStore, useViewportStore, useWorkspaceStore } from '../../../app/state'
+import { workspaceSelectors } from '../../../app/state/workspaceSelectors'
 import { listPoseStoreEngineCapabilities } from '../../../core/app-commanding'
-import { useWorkspaceHudState } from './useWorkspaceHudState'
 
 export function useWorkspaceSelectors() {
-  // NOTE: This hook depends on useWorkspaceHudState. The HUD state is spread
-  // into the return for convenience, creating an implicit dependency chain.
-  const hud = useWorkspaceHudState()
+  // Workspace state from workspaceStore
+  const panels = useWorkspaceStore(useShallow(workspaceSelectors.panels))
+  const widgets = useWorkspaceStore(useShallow(workspaceSelectors.widgets))
+  const widgetVisibility = useWorkspaceStore(useShallow(workspaceSelectors.widgetVisibility))
+  const panelActions = useWorkspaceStore(useShallow(workspaceSelectors.panelActions))
+  const widgetActions = useWorkspaceStore(useShallow(workspaceSelectors.widgetActions))
+  const layoutActions = useWorkspaceStore(useShallow(workspaceSelectors.layoutActions))
 
   const bridgeStatus = useBridgeStore((state) => state.bridgeStatus)
   const bridgeUrl = useBridgeStore((state) => state.bridgeUrl)
@@ -58,6 +63,12 @@ export function useWorkspaceSelectors() {
     sceneEventLogCount,
     activeTool,
     activeCapabilities,
-    ...hud,
+    // Workspace state
+    ...panels,
+    widgets,
+    ...widgetVisibility,
+    ...panelActions,
+    ...widgetActions,
+    ...layoutActions,
   }
 }

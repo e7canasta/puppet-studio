@@ -129,6 +129,22 @@ export type AppCommand =
     kind: 'toggle_workspace_right_panel'
   }
   | {
+    kind: 'set_workspace_left_panel_size'
+    sizePx: number
+  }
+  | {
+    kind: 'set_workspace_right_panel_size'
+    sizePx: number
+  }
+  | {
+    kind: 'set_workspace_terminal_height'
+    sizePx: number
+  }
+  | {
+    kind: 'set_workspace_outliner_height'
+    sizePx: number
+  }
+  | {
     kind: 'undo_scene_edit'
   }
   | {
@@ -192,6 +208,10 @@ export type AppCommandPort = {
   setWorkspaceWidgetVisible: (widget: WorkspaceWidgetId, visible: boolean) => UndoResult | void
   toggleWorkspaceWidgetCollapsed: (widget: WorkspaceWidgetId) => UndoResult | void
   toggleWorkspaceWidgetPinned: (widget: WorkspaceWidgetId) => UndoResult | void
+  setWorkspaceLeftPanelSize: (sizePx: number) => UndoResult | void
+  setWorkspaceRightPanelSize: (sizePx: number) => UndoResult | void
+  setWorkspaceTerminalHeight: (sizePx: number) => UndoResult | void
+  setWorkspaceOutlinerHeight: (sizePx: number) => UndoResult | void
 }
 
 export type AppCommandEnvelope = EngineCommandEnvelope<AppCommand>

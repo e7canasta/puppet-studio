@@ -8,7 +8,7 @@ import {
 import { reflectAppCommandToTerminalLine } from './commandReflection'
 import { commandRegistry } from './commandRegistry'
 import { undoManager } from './undoManager'
-import { useSceneStore, useViewportStore, useBridgeStore, useAvatarStore, useUiStore } from '../../app/state'
+import { useSceneStore, useViewportStore, useBridgeStore, useAvatarStore, useUiStore, useWorkspaceStore } from '../../app/state'
 import { sceneService, bridgeService } from '../../services'
 import { createEngineRuntime, type EngineCapability } from '../engine'
 import { createEngineSimPreviewCapability, createEngineStatsCapability } from './capabilities'
@@ -226,6 +226,18 @@ function getPoseStoreCommandPort(): AppCommandPort {
     undoSceneEdit: () => undoManager.undo(),
     restoreWorkspaceLayoutDefaults: () => {
       dispatchWorkspaceShellCommand({ kind: 'restore_layout_defaults' })
+    },
+    setWorkspaceLeftPanelSize: (sizePx) => {
+      useWorkspaceStore.getState().setLeftPanelSize(sizePx)
+    },
+    setWorkspaceRightPanelSize: (sizePx) => {
+      useWorkspaceStore.getState().setRightPanelSize(sizePx)
+    },
+    setWorkspaceTerminalHeight: (sizePx) => {
+      useWorkspaceStore.getState().setTerminalHeight(sizePx)
+    },
+    setWorkspaceOutlinerHeight: (sizePx) => {
+      useWorkspaceStore.getState().setRightPanelOutlinerHeight(sizePx)
     },
   }
 }
