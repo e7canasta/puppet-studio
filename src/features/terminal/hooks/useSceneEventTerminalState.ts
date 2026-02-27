@@ -1,15 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
-import { useSceneStore, useUiStore, useBridgeStore, useTerminalUiStore } from '../../../app/state'
-import { createAppCommandDispatcher } from '../../../shared/ui'
-import {
-  buildSceneEventFilterOptions,
-  filterTerminalCommandPaletteItems,
-  filterSceneEvents,
-  selectSceneEvent,
-  stringifySceneEventPayload,
-} from '../model'
+import { useSceneStore, useUiStore, useBridgeStore } from '../../../app/state'
+import { filterTerminalCommandPaletteItems } from '../model'
 import { useTerminalFilters } from './useTerminalFilters'
 import { useTerminalCommands } from './useTerminalCommands'
 import { useTerminalKeyboard } from './useTerminalKeyboard'
@@ -43,23 +36,8 @@ export function useSceneEventTerminalState() {
 
   const sceneRemoteHoldEnabled = useBridgeStore((s) => s.sceneRemoteHoldEnabled)
 
-  const filters = useTerminalFilters()
+  const filters = useTerminalFilters(sceneEventLog)
   const bodyRef = useRef<HTMLDivElement | null>(null)
-
-  const filterOptions = useMemo(() => buildSceneEventFilterOptions(sceneEventLog), [sceneEventLog])
-  const filteredEvents = useMemo(
-    () =>
-      filterSceneEvents(sceneEventLog, {
-        kindFilter: filters.filters.kindFilter,
-        levelFilter: filters.filters.levelFilter,
-        sceneFilter: filters.filters.sceneFilter,
-        searchFilter: filters.filters.searchFilter,
-        sourceFilter: filters.filters.sourceFilter,
-      }),
-    [filters.filters, sceneEventLog],
-  )
-  const selectedEvent = useMemo(() => selectSceneEvent(filteredEvents, filters.selectedEventId), [filteredEvents, filters.selectedEventId])
-  const selectedEventPayload = useMemo(() => stringifySceneEventPayload(selectedEvent), [selectedEvent])
 
   const commandContext = useMemo(
     () => ({
@@ -90,104 +68,33 @@ export function useSceneEventTerminalState() {
 
   useTerminalAutoScroll({
     bodyRef,
-    filteredEvents,
+    filteredEvents: filters.filteredEvents,
     sceneEventAutoScroll,
     sceneEventTerminalOpen,
   })
 
-  useEffect(() => {
-    commands.setCommandSuggestionCursor(null)
-  }, [commands.commandInput])
-
-  useEffect(() => {
-    commands.setCommandPaletteSelectedIndex(0)
-  }, [commands.commandPaletteQuery])
-
-  useEffect(() => {
-    if (!sceneEventTerminalOpen || !commands.dynamicInputEnabled) return
-    commands.commandInputRef.current?.focus()
-  }, [commands.dynamicInputEnabled, sceneEventTerminalOpen])
-
-  useEffect(() => {
-    if (!commands.commandPaletteOpen) return
-    commands.commandPaletteInputRef.current?.focus()
-  }, [commands.commandPaletteOpen])
-
-  const handleCommandPaletteKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'ArrowDown') {
-        if (commandPaletteItems.length <= 0) return
-        event.preventDefault()
-        commands.setCommandPaletteSelectedIndex((commands.commandPaletteSelectedIndex + 1) % commandPaletteItems.length)
-        return
-      }
-
-      if (event.key === 'ArrowUp') {
-        if (commandPaletteItems.length <= 0) return
-        event.preventDefault()
-        commands.setCommandPaletteSelectedIndex((commands.commandPaletteSelectedIndex - 1 + commandPaletteItems.length) % commandPaletteItems.length)
-        return
-      }
-
-      if (event.key === 'Enter') {
-        const selected = commandPaletteItems[commands.commandPaletteSelectedIndex]
-        if (!selected) return
-        event.preventDefault()
-        commands.executePaletteCommand(selected.name)
-        return
-      }
-
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        commands.closeCommandPalette()
-      }
-    },
-    [commandPaletteItems, commands],
-  )
-
   return {
+    // Core refs
     bodyRef,
-    commandHistory: commands.commandHistory,
-    commandHistoryExpanded: commands.commandHistoryExpanded,
-    commandInput: commands.commandInput,
-    commandInputRef: commands.commandInputRef,
-    commandPaletteInputRef: commands.commandPaletteInputRef,
+
+    // Computed values
+    filteredEvents: filters.filteredEvents,
+    filterOptions: filters.filterOptions,
+    selectedEvent: filters.selectedEvent,
+    selectedEventPayload: filters.selectedEventPayload,
     commandPaletteItems,
-    commandPaletteOpen: commands.commandPaletteOpen,
-    commandPaletteQuery: commands.commandPaletteQuery,
-    commandPaletteSelectedIndex: commands.commandPaletteSelectedIndex,
-    commandSuggestions: commands.commandSuggestions,
-    dynamicInputEnabled: commands.dynamicInputEnabled,
-    dispatchFromTerminal: commands.dispatchFromTerminal,
-    executePaletteCommand: commands.executePaletteCommand,
-    executeTerminalCommand: commands.executeTerminalCommand,
-    filteredEvents,
-    filterOptions,
-    handleCommandPaletteKeyDown,
-    handleCommandInputKeyDown: commands.handleCommandInputKeyDown,
-    kindFilter: filters.filters.kindFilter,
-    levelFilter: filters.filters.levelFilter,
+
+    // UI state from store
     sceneEventAutoScroll,
     sceneEventDroppedWhilePaused,
     sceneEventLog,
     sceneEventLogPaused,
     sceneEventTerminalOpen,
-    sceneFilter: filters.filters.sceneFilter,
-    searchFilter: filters.filters.searchFilter,
-    selectedEvent,
+
+    // Composed hooks (spread)
+    ...filters.filters,
+    ...filters.setters,
     selectedEventId: filters.selectedEventId,
-    selectedEventPayload,
-    setKindFilter: filters.setters.setKindFilter,
-    setLevelFilter: filters.setters.setLevelFilter,
-    setSceneFilter: filters.setters.setSceneFilter,
-    setSearchFilter: filters.setters.setSearchFilter,
-    setSelectedEventId: filters.setters.setSelectedEventId,
-    setSourceFilter: filters.setters.setSourceFilter,
-    setCommandPaletteOpen: commands.setCommandPaletteOpen,
-    setCommandPaletteQuery: commands.setCommandPaletteQuery,
-    setCommandPaletteSelectedIndex: commands.setCommandPaletteSelectedIndex,
-    setCommandHistoryExpanded: commands.setCommandHistoryExpanded,
-    setCommandInput: commands.setCommandInput,
-    sourceFilter: filters.filters.sourceFilter,
+    ...commands,
   }
 }

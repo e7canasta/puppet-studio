@@ -17,8 +17,11 @@ import {
 } from '../components/WorkspaceCommandPalette'
 import { WorkspaceDockManager } from '../components/WorkspaceDockManager'
 import { WorkspaceHeaderBar } from '../components/WorkspaceHeaderBar'
+import { WorkspaceLeftPanel } from '../components/WorkspaceLeftPanel'
+import { WorkspaceRightPanel } from '../components/WorkspaceRightPanel'
 import { WorkspaceSceneOutliner } from '../components/WorkspaceSceneOutliner'
 import { WorkspaceStatusBar } from '../components/WorkspaceStatusBar'
+import { WorkspaceTerminalStrip } from '../components/WorkspaceTerminalStrip'
 import { WorkspaceToolrail } from '../components/WorkspaceToolrail'
 import { WorkspaceViewportShell } from '../components/WorkspaceViewportShell'
 import { WorkspaceWidgetCard } from '../components/WorkspaceWidgetCard'
@@ -147,26 +150,14 @@ export function CadWorkspacePage() {
       ) : null}
 
       <main className="cad-workspace-main">
-        {selectors.showPropertiesWidget ? (
-          <aside className="workspace-side workspace-side-left" style={{ width: `${leftPanelWidthPx}px` }}>
-            <div className="workspace-side-content workspace-side-content-tight">
-              <WorkspaceWidgetCard
-                collapsed={selectors.widgets.properties.collapsed}
-                icon={<IconSliders className="workspace-widget-head-icon" />}
-                label="Properties"
-                pinned={selectors.widgets.properties.pinned}
-                onToggleCollapsed={() => toggleWidgetCollapsedFromWorkspace('properties')}
-                onTogglePinned={() => toggleWidgetPinnedFromWorkspace('properties')}
-                onHide={() => setWidgetVisibilityFromWorkspace('properties', false)}
-              >
-                <Suspense fallback={<div className="panel-shell-loading">Loading controls...</div>}>
-                  <PoseControlPanel />
-                </Suspense>
-              </WorkspaceWidgetCard>
-            </div>
-          </aside>
-        ) : null}
-        {selectors.showPropertiesWidget ? <div className="workspace-resize-handle vertical" onPointerDown={beginResize('left')} /> : null}
+        <WorkspaceLeftPanel
+          selectors={selectors}
+          leftPanelWidthPx={leftPanelWidthPx}
+          beginResize={beginResize}
+          toggleWidgetCollapsed={toggleWidgetCollapsedFromWorkspace}
+          toggleWidgetPinned={toggleWidgetPinnedFromWorkspace}
+          setWidgetVisibility={setWidgetVisibilityFromWorkspace}
+        />
 
         <section className="workspace-center">
           <WorkspaceToolrail
@@ -190,94 +181,18 @@ export function CadWorkspacePage() {
           />
         </section>
 
-        {selectors.rightPanelOpen && anyRightWidgetVisible ? <div className="workspace-resize-handle vertical" onPointerDown={beginResize('right')} /> : null}
-        {selectors.rightPanelOpen && anyRightWidgetVisible ? (
-          <aside className="workspace-side workspace-side-right" style={{ width: `${rightPanelWidthPx}px` }}>
-            <div className="workspace-side-head workspace-side-head-wrap">
-              <button
-                type="button"
-                className={selectors.showOutlinerWidget ? 'active' : ''}
-                onClick={() => setWidgetVisibilityFromWorkspace('outliner', !selectors.widgets.outliner.visible)}
-              >
-                Outliner
-              </button>
-              <button
-                type="button"
-                className={selectors.showCameraWidget ? 'active' : ''}
-                onClick={() => setWidgetVisibilityFromWorkspace('camera', !selectors.widgets.camera.visible)}
-              >
-                Camera
-              </button>
-              <button
-                type="button"
-                className={selectors.showPlanWidget ? 'active' : ''}
-                onClick={() => setWidgetVisibilityFromWorkspace('planogram', !selectors.widgets.planogram.visible)}
-              >
-                Planogram
-              </button>
-              <button type="button" className={dockManagerOpen ? 'active' : ''} onClick={() => setDockManagerOpen((open) => !open)}>
-                Dock
-              </button>
-            </div>
-            <div className="workspace-side-content workspace-side-content-split">
-              {selectors.showOutlinerWidget ? (
-                <div
-                  className={`workspace-right-panel-top ${selectors.showCameraWidget || selectors.showPlanWidget ? '' : 'fill'}`}
-                  style={selectors.showCameraWidget || selectors.showPlanWidget ? { height: `${outlinerHeightPx}px` } : undefined}
-                >
-                  <WorkspaceWidgetCard
-                    collapsed={selectors.widgets.outliner.collapsed}
-                    icon={<IconOutliner className="workspace-widget-head-icon" />}
-                    label="Scene Outliner"
-                    pinned={selectors.widgets.outliner.pinned}
-                    onToggleCollapsed={() => toggleWidgetCollapsedFromWorkspace('outliner')}
-                    onTogglePinned={() => toggleWidgetPinnedFromWorkspace('outliner')}
-                    onHide={() => setWidgetVisibilityFromWorkspace('outliner', false)}
-                  >
-                    <WorkspaceSceneOutliner />
-                  </WorkspaceWidgetCard>
-                </div>
-              ) : null}
-              {selectors.showOutlinerWidget && (selectors.showCameraWidget || selectors.showPlanWidget) && !selectors.widgets.outliner.collapsed ? (
-                <div className="workspace-resize-handle horizontal inset" onPointerDown={beginResize('right_outliner')} />
-              ) : null}
-              {selectors.showCameraWidget || selectors.showPlanWidget ? (
-                <div className="workspace-right-panel-bottom workspace-widget-stack">
-                  {selectors.showCameraWidget ? (
-                    <WorkspaceWidgetCard
-                      collapsed={selectors.widgets.camera.collapsed}
-                      icon={<IconCamera className="workspace-widget-head-icon" />}
-                      label="Camera Map"
-                      pinned={selectors.widgets.camera.pinned}
-                      onToggleCollapsed={() => toggleWidgetCollapsedFromWorkspace('camera')}
-                      onTogglePinned={() => toggleWidgetPinnedFromWorkspace('camera')}
-                      onHide={() => setWidgetVisibilityFromWorkspace('camera', false)}
-                    >
-                      <Suspense fallback={<div className="hud-widget-loading">Loading camera map...</div>}>
-                        <CameraSubspaceMap />
-                      </Suspense>
-                    </WorkspaceWidgetCard>
-                  ) : null}
-                  {selectors.showPlanWidget ? (
-                    <WorkspaceWidgetCard
-                      collapsed={selectors.widgets.planogram.collapsed}
-                      icon={<IconPlanogram className="workspace-widget-head-icon" />}
-                      label="Planogram"
-                      pinned={selectors.widgets.planogram.pinned}
-                      onToggleCollapsed={() => toggleWidgetCollapsedFromWorkspace('planogram')}
-                      onTogglePinned={() => toggleWidgetPinnedFromWorkspace('planogram')}
-                      onHide={() => setWidgetVisibilityFromWorkspace('planogram', false)}
-                    >
-                      <Suspense fallback={<div className="hud-widget-loading">Loading planogram...</div>}>
-                        <PlanogramMiniMap />
-                      </Suspense>
-                    </WorkspaceWidgetCard>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </aside>
-        ) : null}
+        <WorkspaceRightPanel
+          selectors={selectors}
+          beginResize={beginResize}
+          dispatch={dispatchFromWorkspace}
+          dockManagerOpen={dockManagerOpen}
+          onToggleDockManager={() => setDockManagerOpen((open) => !open)}
+          rightPanelWidthPx={rightPanelWidthPx}
+          outlinerHeightPx={outlinerHeightPx}
+          toggleWidgetCollapsed={toggleWidgetCollapsedFromWorkspace}
+          toggleWidgetPinned={toggleWidgetPinnedFromWorkspace}
+          setWidgetVisibility={setWidgetVisibilityFromWorkspace}
+        />
       </main>
 
       <WorkspaceStatusBar
@@ -296,24 +211,13 @@ export function CadWorkspacePage() {
         sceneSequence={selectors.sceneSequence}
       />
 
-      <div className="workspace-terminal-strip" style={{ height: selectors.sceneEventTerminalOpen ? `${selectors.terminalHeightPx + 8}px` : '34px' }}>
-        {selectors.sceneEventTerminalOpen ? <div className="workspace-resize-handle horizontal" onPointerDown={beginResize('terminal')} /> : null}
-        {selectors.sceneEventTerminalOpen ? (
-          <Suspense fallback={<div className="terminal-shell-loading">Loading terminal...</div>}>
-            <SceneEventTerminal layout="docked" />
-          </Suspense>
-        ) : (
-          <button
-            type="button"
-            className="workspace-terminal-collapsed-bar"
-            onClick={() => dispatchFromWorkspace({ kind: 'toggle_scene_event_terminal' })}
-          >
-            <span>Event Terminal</span>
-            <span>events:{selectors.sceneEventLogCount}</span>
-            <span>{STUDIO_SHORTCUTS.terminal.toggle}</span>
-          </button>
-        )}
-      </div>
+      <WorkspaceTerminalStrip
+        terminalOpen={selectors.sceneEventTerminalOpen}
+        terminalHeightPx={selectors.terminalHeightPx}
+        eventCount={selectors.sceneEventLogCount}
+        onToggle={() => dispatchFromWorkspace({ kind: 'toggle_scene_event_terminal' })}
+        beginResize={beginResize}
+      />
 
       <WorkspaceCommandPalette actions={quickActions} dispatch={dispatchFromWorkspace} />
     </div>

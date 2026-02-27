@@ -1,8 +1,11 @@
+import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
+import type { SceneEventEntry } from '../../../core/observability/sceneEventLog'
 import { useTerminalUiStore } from '../../../app/state'
+import { buildSceneEventFilterOptions, filterSceneEvents, selectSceneEvent, stringifySceneEventPayload } from '../model'
 
-export function useTerminalFilters() {
+export function useTerminalFilters(sceneEventLog: SceneEventEntry[]) {
   const {
     sourceFilter,
     kindFilter,
@@ -39,6 +42,23 @@ export function useTerminalFilters() {
     })),
   )
 
+  const filterOptions = useMemo(() => buildSceneEventFilterOptions(sceneEventLog), [sceneEventLog])
+
+  const filteredEvents = useMemo(
+    () =>
+      filterSceneEvents(sceneEventLog, {
+        kindFilter,
+        levelFilter,
+        sceneFilter,
+        searchFilter,
+        sourceFilter,
+      }),
+    [kindFilter, levelFilter, sceneEventLog, sceneFilter, searchFilter, sourceFilter],
+  )
+
+  const selectedEvent = useMemo(() => selectSceneEvent(filteredEvents, selectedEventId), [filteredEvents, selectedEventId])
+  const selectedEventPayload = useMemo(() => stringifySceneEventPayload(selectedEvent), [selectedEvent])
+
   return {
     filters: {
       sourceFilter,
@@ -56,5 +76,9 @@ export function useTerminalFilters() {
       setSelectedEventId,
     },
     selectedEventId,
+    filterOptions,
+    filteredEvents,
+    selectedEvent,
+    selectedEventPayload,
   }
 }

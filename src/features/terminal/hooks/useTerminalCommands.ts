@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -7,6 +7,7 @@ import { listPoseStoreEngineCapabilities } from '../../../core/app-commanding'
 import { runtimeConfig } from '../../../core/config'
 import { createAppCommandDispatcher } from '../../../shared/ui'
 import {
+  filterTerminalCommandPaletteItems,
   runTerminalCommandLine,
   suggestTerminalCommands,
   type TerminalCommandContext,
@@ -22,6 +23,9 @@ export function useTerminalCommands(context: {
   sceneRemoteHoldEnabled: boolean
   showDimensions: boolean
 }) {
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 1: Store selectors (command input, history, palette)
+  // ═══════════════════════════════════════════════════════════
   // ═══════════════════════════════════════════════════════════
   // SECTION 1: Store selectors (command input, history, palette)
   // ═══════════════════════════════════════════════════════════
@@ -89,6 +93,10 @@ export function useTerminalCommands(context: {
   // ═══════════════════════════════════════════════════════════
   const dispatchFromTerminal = createAppCommandDispatcher('ui.event_terminal')
   const commandSuggestions = useMemo(() => suggestTerminalCommands(commandInput), [commandInput])
+  const commandPaletteItems = useMemo(
+    () => filterTerminalCommandPaletteItems(commandPaletteQuery),
+    [commandPaletteQuery],
+  )
 
   const capabilities = listPoseStoreEngineCapabilities()
   const terminalCommandContext = useMemo(
@@ -227,6 +235,60 @@ export function useTerminalCommands(context: {
     [commandHistory, commandHistoryCursor, commandInput, commandSuggestionCursor, commandSuggestions, executeTerminalCommand, resetCommandInput, setCommandHistoryCursor, setCommandInput, setCommandSuggestionCursor],
   )
 
+  const handleCommandPaletteKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLInputElement>) => {
+      const items = commandPaletteItems
+      if (event.key === 'ArrowDown') {
+        if (items.length <= 0) return
+        event.preventDefault()
+        setCommandPaletteSelectedIndex((commandPaletteSelectedIndex + 1) % items.length)
+        return
+      }
+
+      if (event.key === 'ArrowUp') {
+        if (items.length <= 0) return
+        event.preventDefault()
+        setCommandPaletteSelectedIndex((commandPaletteSelectedIndex - 1 + items.length) % items.length)
+        return
+      }
+
+      if (event.key === 'Enter') {
+        const selected = items[commandPaletteSelectedIndex]
+        if (!selected) return
+        event.preventDefault()
+        executePaletteCommand(selected.name)
+        return
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeCommandPalette()
+      }
+    },
+    [closeCommandPalette, commandPaletteItems, commandPaletteSelectedIndex, executePaletteCommand, setCommandPaletteSelectedIndex],
+  )
+
+  // ═══════════════════════════════════════════════════════════
+  // SECTION 4: Effects (cursor reset, focus)
+  // ═══════════════════════════════════════════════════════════
+  useEffect(() => {
+    setCommandSuggestionCursor(null)
+  }, [commandInput])
+
+  useEffect(() => {
+    setCommandPaletteSelectedIndex(0)
+  }, [commandPaletteQuery])
+
+  useEffect(() => {
+    if (!context.sceneEventTerminalOpen || !dynamicInputEnabled) return
+    commandInputRef.current?.focus()
+  }, [context.sceneEventTerminalOpen, dynamicInputEnabled])
+
+  useEffect(() => {
+    if (!commandPaletteOpen) return
+    commandPaletteInputRef.current?.focus()
+  }, [commandPaletteOpen])
+
   return {
     closeCommandPalette,
     commandInput,
@@ -244,6 +306,7 @@ export function useTerminalCommands(context: {
     executePaletteCommand,
     executeTerminalCommand,
     handleCommandInputKeyDown,
+    handleCommandPaletteKeyDown,
     setCommandHistoryExpanded,
     setCommandInput,
     setCommandHistoryCursor,
