@@ -104,6 +104,30 @@ function getPoseStoreCommandPort(): AppCommandPort {
       })
     },
     resetPose: () => avatarStore.resetPose(),
+    setAvatarPosition: (position) => {
+      const prevPosition = avatarStore.avatarPlanPositionM
+      avatarStore.setAvatarPosition(position)
+      return {
+        redo: () => avatarStore.setAvatarPosition(position),
+        undo: () => avatarStore.setAvatarPosition(prevPosition),
+      }
+    },
+    setAvatarRotation: (rotationDeg) => {
+      const prevRotation = avatarStore.avatarRotationDeg
+      avatarStore.setAvatarRotation(rotationDeg)
+      return {
+        redo: () => avatarStore.setAvatarRotation(rotationDeg),
+        undo: () => avatarStore.setAvatarRotation(prevRotation),
+      }
+    },
+    setAvatarPose: (pose) => {
+      const prevPose = avatarStore.pose
+      avatarStore.setPose(pose as Parameters<typeof avatarStore.setPose>[0])
+      return {
+        redo: () => avatarStore.setPose(pose as Parameters<typeof avatarStore.setPose>[0]),
+        undo: () => avatarStore.setPose(prevPose),
+      }
+    },
     resetCameraOverlayFlip: () => viewportStore.resetCameraOverlayFlip(),
     rotateTopView: (direction) => {
       viewportStore.rotateTopView(direction)

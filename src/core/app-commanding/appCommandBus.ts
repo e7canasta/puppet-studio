@@ -41,6 +41,18 @@ export type AppCommand =
     kind: 'reset_pose'
   }
   | {
+    kind: 'set_avatar_position'
+    position: [number, number]
+  }
+  | {
+    kind: 'set_avatar_rotation'
+    rotationDeg: number
+  }
+  | {
+    kind: 'set_avatar_pose'
+    pose: unknown
+  }
+  | {
     kind: 'reset_camera_overlay_flip'
   }
   | {
@@ -152,6 +164,9 @@ export type AppCommandPort = {
   requestEngineSimPreview: () => UndoResult | void
   requestEngineStats: () => UndoResult | void
   resetPose: () => UndoResult | void
+  setAvatarPosition: (position: [number, number]) => UndoResult | void
+  setAvatarRotation: (rotationDeg: number) => UndoResult | void
+  setAvatarPose: (pose: unknown) => UndoResult | void
   resetCameraOverlayFlip: () => UndoResult | void
   rotateTopView: (direction: -1 | 1) => UndoResult | void
   runSceneCommand: (command: SceneCommand, envelope?: AppCommandEnvelope) => UndoResult | void
@@ -215,6 +230,9 @@ export function dispatchAppCommand(port: AppCommandPort, command: AppCommand): U
   if (command.kind === 'set_camera_overlay_flip') return port.setCameraOverlayFlip(command.axis, command.enabled)
   if (command.kind === 'reset_camera_overlay_flip') return port.resetCameraOverlayFlip()
   if (command.kind === 'reset_pose') return port.resetPose()
+  if (command.kind === 'set_avatar_position') return port.setAvatarPosition(command.position)
+  if (command.kind === 'set_avatar_rotation') return port.setAvatarRotation(command.rotationDeg)
+  if (command.kind === 'set_avatar_pose') return port.setAvatarPose(command.pose)
   if (command.kind === 'rotate_top_view') return port.rotateTopView(command.direction)
   if (command.kind === 'set_projection_mode') return port.setProjectionMode(command.mode)
   if (command.kind === 'toggle_scene_edit') return port.toggleSceneEdit()

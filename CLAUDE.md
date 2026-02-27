@@ -110,6 +110,16 @@ lib/
 - For complex operations crossing stores, use `sceneService` or `bridgeService`
 - Command bus (`dispatchPoseStoreCommand`) still works - it delegates internally
 
+### Command Bus Exceptions
+
+Las siguientes operaciones NO van por command bus (intencionalmente):
+
+| Operación | Razón |
+|-----------|-------|
+| Bridge remote updates | External source of truth - sobrescribe estado local |
+| Terminal filter state | UI ephemeral state - no necesita undo |
+| Bridge connection status | Side effect de WebSocket, no user action |
+
 ### Testing
 
 Basic store tests available at `src/app/state/__tests__/stores.test.ts`

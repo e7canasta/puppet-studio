@@ -1,7 +1,7 @@
 import type { AppCommand } from './appCommandBus'
 import type { TerminalCommandContext } from '../../features/terminal/model/terminalCommandLine'
 
-export type AppCommandCategory = 'scene' | 'viewport' | 'bridge' | 'ui' | 'workspace' | 'engine'
+export type AppCommandCategory = 'scene' | 'viewport' | 'bridge' | 'ui' | 'workspace' | 'engine' | 'avatar'
 
 export interface TerminalParseResult {
     commands: AppCommand[]
@@ -22,7 +22,7 @@ export interface CommandMeta<
     description: string
 
     /** Terminal reflection: converts AppCommand → terminal string */
-    toTerminalLine?: (cmd: Extract<TCommand, { kind: TKind }>) => string
+    toTerminalLine?: (cmd: { kind: string; [key: string]: unknown }) => string
 
     /** Terminal parsing: converts (args, context) → AppCommand[] */
     fromTerminalArgs?: (args: string[], ctx: TerminalCommandContext) => TerminalParseResult

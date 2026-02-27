@@ -232,7 +232,7 @@ commandRegistry.register({
     description: 'Pausa/reanuda captura de eventos.',
     terminalAliases: ['logpause', 'pause'],
     terminalUsage: 'pause [on|off]',
-    toTerminalLine: (cmd) => `pause ${boolToken(cmd.enabled)}`,
+    toTerminalLine: (cmd) => `pause ${boolToken(cmd.enabled as boolean)}`,
     fromTerminalArgs: (args, ctx) => {
         const explicitFlag = toBooleanFlag(args[0])
         const nextEnabled = explicitFlag ?? !ctx.sceneEventLogPaused
@@ -247,7 +247,7 @@ commandRegistry.register({
     description: 'Controla auto-scroll del terminal.',
     terminalAliases: ['scroll', 'auto'],
     terminalUsage: 'auto [on|off]',
-    toTerminalLine: (cmd) => `auto ${boolToken(cmd.enabled)}`,
+    toTerminalLine: (cmd) => `auto ${boolToken(cmd.enabled as boolean)}`,
     fromTerminalArgs: (args, ctx) => {
         const explicitFlag = toBooleanFlag(args[0])
         const nextEnabled = explicitFlag ?? !ctx.sceneEventAutoScroll
@@ -299,6 +299,7 @@ commandRegistry.register({
             message: token === 'none' ? 'selection cleared' : `placement selected: ${token}`,
         }
     },
+    flags: { undoable: false },
 })
 
 commandRegistry.register({
@@ -344,7 +345,7 @@ commandRegistry.register({
     category: 'scene',
     label: 'Execute Scene Data Command',
     description: 'Runs data manipulation commands like move or snap.',
-    toTerminalLine: (cmd) => {
+    toTerminalLine: (cmd: any) => {
         if (cmd.command.kind === 'snap_selected_to_grid') return `snap ${cmd.command.stepM}`
         if (cmd.command.kind === 'rotate_selected_by') return `rotate ${cmd.command.deltaDeg}`
         return `move ${cmd.command.deltaM[0]} ${cmd.command.deltaM[1]}`
@@ -401,7 +402,7 @@ commandRegistry.register({
     description: 'Muestra/oculta dimensiones.',
     terminalAliases: ['measure', 'msr', 'dims'],
     terminalUsage: 'dims [on|off]',
-    toTerminalLine: (cmd) => `dims ${boolToken(cmd.show)}`,
+    toTerminalLine: (cmd) => `dims ${boolToken(cmd.show as boolean)}`,
     fromTerminalArgs: (args, ctx) => {
         const explicitFlag = toBooleanFlag(args[0])
         if (explicitFlag === null && args.length > 0) return commandError('invalid dims flag (use: on|off)')
@@ -416,7 +417,7 @@ commandRegistry.register({
     category: 'viewport',
     label: 'Rotate Top View',
     description: 'Rotar la vista top (CW / CCW).',
-    toTerminalLine: (cmd) => cmd.direction < 0 ? 'top_ccw' : 'top_cw',
+    toTerminalLine: (cmd) => (cmd.direction as number) < 0 ? 'top_ccw' : 'top_cw',
     flags: { undoable: true },
 })
 
@@ -433,7 +434,7 @@ commandRegistry.register({
     category: 'viewport',
     label: 'Flip Camera Overlay',
     description: 'Gira el overlay de camara 2D.',
-    toTerminalLine: (cmd) => `flip_${cmd.axis} ${boolToken(cmd.enabled)}`,
+    toTerminalLine: (cmd) => `flip_${cmd.axis} ${boolToken(cmd.enabled as boolean)}`,
 })
 
 commandRegistry.register({
@@ -452,7 +453,7 @@ commandRegistry.register({
     description: 'Habilita/inhabilita bridge de sincronización remota.',
     terminalAliases: ['bridge'],
     terminalUsage: 'bridge <on|off>',
-    toTerminalLine: (cmd) => `bridge ${boolToken(cmd.enabled)}`,
+    toTerminalLine: (cmd) => `bridge ${boolToken(cmd.enabled as boolean)}`,
     fromTerminalArgs: (args) => {
         const explicitFlag = toBooleanFlag(args[0])
         if (explicitFlag === null) return commandError('invalid bridge flag (use: on|off)')
@@ -509,9 +510,36 @@ commandRegistry.register({
 // === POSE / USER ===
 commandRegistry.register({
     id: 'reset_pose',
-    category: 'ui',
+    category: 'avatar',
     label: 'Reset Pose Avatar',
     description: 'Resets the avatar pose tracking state to initial zero pose.',
     toTerminalLine: () => 'pose_reset',
+})
+
+commandRegistry.register({
+    id: 'set_avatar_position',
+    category: 'avatar',
+    label: 'Set Avatar Position',
+    description: 'Moves avatar to position (x, z) in meters.',
+    toTerminalLine: (cmd) => `avatar_pos ${(cmd.position as number[])[0]} ${(cmd.position as number[])[1]}`,
+    flags: { undoable: true },
+})
+
+commandRegistry.register({
+    id: 'set_avatar_rotation',
+    category: 'avatar',
+    label: 'Set Avatar Rotation',
+    description: 'Rotates avatar by degrees.',
+    toTerminalLine: (cmd) => `avatar_rot ${cmd.rotationDeg}`,
+    flags: { undoable: true },
+})
+
+commandRegistry.register({
+    id: 'set_avatar_pose',
+    category: 'avatar',
+    label: 'Set Avatar Pose',
+    description: 'Sets avatar joint pose.',
+    toTerminalLine: () => 'avatar_pose [...]',
+    flags: { undoable: true },
 })
 

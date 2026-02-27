@@ -2,6 +2,7 @@ import { useBridgeStore, type DeferredSceneMessage } from '../app/state/bridgeSt
 import { useSceneStore } from '../app/state/sceneStore'
 import { useAvatarStore } from '../app/state/avatarStore'
 import { useUiStore } from '../app/state/uiStore'
+import { undoManager } from '../core/app-commanding/undoManager'
 import {
   applyScenePatchFromBridge,
   parseSceneSnapshotFromBridge,
@@ -63,7 +64,7 @@ export const bridgeService = {
       },
       deferredQueue: bridgeStore.sceneDeferredRemoteQueue,
       deferredQueueLimit: runtimeConfig.sceneDeferredQueueLimit,
-      hasLocalEdits: sceneStore.sceneUndoStack.length > 0 || sceneStore.sceneRedoStack.length > 0,
+      hasLocalEdits: undoManager.state.undoCount > 0 || undoManager.state.redoCount > 0,
       holdRemoteEnabled: bridgeStore.sceneRemoteHoldEnabled,
       incoming: {
         kind: 'scene_patch',
@@ -157,7 +158,7 @@ export const bridgeService = {
       },
       deferredQueue: bridgeStore.sceneDeferredRemoteQueue,
       deferredQueueLimit: runtimeConfig.sceneDeferredQueueLimit,
-      hasLocalEdits: sceneStore.sceneUndoStack.length > 0 || sceneStore.sceneRedoStack.length > 0,
+      hasLocalEdits: undoManager.state.undoCount > 0 || undoManager.state.redoCount > 0,
       holdRemoteEnabled: bridgeStore.sceneRemoteHoldEnabled,
       incoming: {
         kind: 'scene_snapshot',
