@@ -5,6 +5,10 @@ models/
 node_modules/
 node_modules/**
 
+plan/
+
+.vscode/
+
 archive/
 archive/**
 
